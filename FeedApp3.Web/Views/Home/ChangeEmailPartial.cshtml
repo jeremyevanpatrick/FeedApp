@@ -1,0 +1,46 @@
+﻿@model ChangeEmailModel
+
+<div class="contentRow ps-3 pe-3 fw-bold bg-primary text-white">Change Email</div>
+
+<div id="changeEmailErrorMessage" class="contentRow p-3 text-danger d-none"></div>
+
+<div id="changeEmailFormContainer" class="contentRow ps-3 pe-3">
+    @using (Html.BeginForm("ChangeEmail", "Home", FormMethod.Post, new { id = "changeEmailForm" }))
+    {
+        @Html.AntiForgeryToken()
+
+        @Html.LabelFor(m => m.NewEmail, "New Email")
+        @Html.TextBoxFor(m => m.NewEmail, new { @class = "form-control", style = "margin:3px 0;", @readonly = "true", onfocus = "this.readOnly = false;", onblur = "this.readOnly = true;" })
+        @Html.ValidationMessageFor(m => m.NewEmail, "", new { @class = "text-danger" })
+
+        @Html.LabelFor(m => m.Password)
+        @Html.PasswordFor(m => m.Password, new { @class = "form-control", style = "margin:3px 0;", @readonly = "true", onfocus = "this.readOnly = false;", onblur = "this.readOnly = true;" })
+        @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
+
+        <button type="submit" class="btn btn-success mt-3 mb-3 d-block">
+            <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+            Save
+        </button>
+    }
+</div>
+<div id="changeEmailSuccessMessage" class="contentRow pt-4 pb-4 ps-3 pe-3 d-none" style="line-height:22px;">
+    <strong>Request sent! Please confirm your email address.</strong><br />
+    We’ve sent a confirmation link to your email.<br />
+    Click the link to confirm your new email address.
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        await addSubmitFormListener(
+            "changeEmailForm",
+            function(){
+                document.getElementById('changeEmailFormContainer').classList.add("d-none");
+                document.getElementById('changeEmailSuccessMessage').classList.remove("d-none");
+                document.getElementById('changeEmailErrorMessage').classList.add("d-none");
+                document.getElementById('changeEmailErrorMessage').innerHTML = '';
+            }, function(errorString){
+                document.getElementById('changeEmailErrorMessage').classList.remove("d-none");
+                document.getElementById('changeEmailErrorMessage').innerHTML = errorString;
+            });
+    });
+</script>

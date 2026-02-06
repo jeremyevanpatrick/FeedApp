@@ -1,0 +1,75 @@
+﻿@using FeedApp3.Shared.Services.DTOs
+@model FeedDto
+@{
+    ViewBag.Title = string.Format("Feed App 3 - {0}", Model?.FeedTitle);
+}
+
+@Html.AntiForgeryToken()
+
+<div id="errorMessage" class="contentRow p-3 text-danger @(!string.IsNullOrWhiteSpace(ViewBag.ErrorMessage) ? string.Empty : "d-none")" style="line-height: 22px;">
+    @ViewBag.ErrorMessage
+</div>
+
+<div id="articleList">
+    <div id="feedHeader" class="feedItem">
+        <a href="@Model?.BlogUrl" target="_blank"><span class="feedIcon" style="background-image:url('@Model?.FaviconImage');"></span><span class="itemName">@Model?.FeedTitle</span></a>
+        <button id="startArticle" class="btn btn-success float-end" style="margin: 3px;" onclick="scrollToFirstNewArticle()">&#9662;</button>
+        <a asp-controller="Home" asp-action="Feeds" class="btn btn-secondary float-end" style="margin: 3px;">Back</a>
+    </div>
+    @if (Model?.Articles?.Any() == true)
+    {
+        foreach (ArticleDto article in Model.Articles)
+        {
+            <div class="feedItem @(article.IsUnread ? " isNewItem " : string.Empty)">
+                <a href="@article.ArticleUrl" target="_blank" class="itemName" onclick="markArticleAsRead('@(article.ArticleId)')">@article.ArticleTitle</a>
+                @if (article.IsUnread)
+                {
+                    <span class="newItemCount" data-article-id="@(article.ArticleId)" onclick="markArticleAsRead('@(article.ArticleId)')">New</span>
+                }
+            </div>
+            <div class="articleText">
+                <div class="articleDate">@article.ArticleDate.ToString()</div>
+                <div>@Html.Raw(article.ArticleContent)</div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="feedItem">
+            <span class="itemName">No articles found.</span>
+        </div>
+    }
+</div>
+
+<div asp-validation-summary="ModelOnly" class="text-danger validationSummaryContainer contentRow ps-3 pe-3"></div>
+
+@section Scripts {
+    <script>
+        async function markArticleAsRead(articleId) {
+            var newItemCountElement = document.querySelector('[data-article-id="'+articleId+'"]');
+            if(newItemCountElement) {
+                const json = {
+                    "ArticleId": articleId
+                };
+                await postJson('@Url.Action("MarkArticleAsRead", "Home")', json, function(){
+                    newItemCountElement?.parentElement?.classList.remove("isNewItem");
+                    newItemCountElement?.remove();
+                }, function(errorString){
+                    document.getElementById('errorMessage').classList.remove("d-none");
+                    document.getElementById('errorMessage').innerHTML = errorString;
+                });
+            }
+        }
+
+        function scrollToFirstNewArticle(){
+            const items = document.querySelectorAll('.newItemCount');
+            const lastItem = items[items.length - 1];
+
+            if (lastItem) {
+                const parent = lastItem.parentElement;
+                parent.scrollIntoView({ behavior: 'smooth' });
+            }
+
+        }
+    </script>
+}

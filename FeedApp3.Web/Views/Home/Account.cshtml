@@ -1,0 +1,22 @@
+﻿@{
+    ViewBag.Title = "Feed App 3 - Profile";
+}
+
+<div id="feedHeader">
+    <span id="nameplate">
+        <img src="~/favicon.ico" /> Feed App
+    </span>
+    <a asp-controller="Home" asp-action="Feeds" class="btn btn-secondary float-end" style="margin: 3px;">Back</a>
+    <a asp-controller="Home" asp-action="Logout" class="float-end ms-2 me-2">Logout</a>
+</div>
+
+<div class="contentRow fs-5 pt-2 pb-2 text-center fw-bold">Profile</div>
+<div class="contentRow ps-3 pe-3 text-center">
+    <div class="d-inline-block w-100">@(!string.IsNullOrWhiteSpace(ViewBag.Username) ? ViewBag.Username : string.Empty)</div>
+</div>
+
+<partial name="ChangeEmailPartial" model="new ChangeEmailModel()" />
+
+<partial name="ChangePasswordPartial" model="new ChangePasswordModel()" />
+
+<partial name="DeleteAccountPartial" model="new DeleteAccountModel()" />

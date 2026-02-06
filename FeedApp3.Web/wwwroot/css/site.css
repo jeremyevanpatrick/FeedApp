@@ -1,0 +1,438 @@
+html {
+  font-size: 16px;
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+/*****************************************
+*   Document styles
+*****************************************/
+@font-face {
+    font-family: 'fira-sans';
+    src: url('../fonts/firasans-regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+}
+
+body {
+    margin: 0px;
+    padding: 0px;
+    border: 0px;
+    outline: 0px;
+    font-family: Arial;
+    font-size: 14px;
+    color: #1a1a1a;
+    background-color: #edeef3;
+    height: 100vh;
+}
+
+#app {
+    max-width: 420px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background-color: #FFF;
+    top: 0px;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+.validation-summary-errors ul {
+    margin-bottom: 0px;
+    padding: 0px;
+    list-style-type: none;
+}
+
+.field-validation-error{
+    line-height:1.5!important;
+}
+
+.btn {
+    font-size: 14px;
+}
+
+.spinner {
+    background-image: url(../Content/spinner1.gif);
+    background-size: 100%;
+    height: 34px;
+    width: 34px;
+    float: right;
+    display: none;
+}
+
+/*****************************************
+*   Login page styles
+*****************************************/
+#login form input,
+#forgotPassword form input,
+#signup form input {
+    margin-bottom: 3px;
+}
+
+#forgotPassword,
+#signup {
+    display: none;
+}
+
+#showForgot {
+    float: right;
+}
+
+#forgotPasswordStatus {
+    display: none;
+}
+
+.form-floating label {
+    min-height: 27px !important;
+    top: 19px;
+    height: 27px !important;
+    line-height: 15px;
+    padding: 3px 0px;
+    left: 0.75rem;
+}
+
+.form-floating > .form-control-plaintext ~ label,
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label,
+.form-floating > .form-select ~ label {
+    top: 11px;
+}
+
+.form-floating label::after {
+    top: 2px !important;
+    inset: 0px !important;
+}
+
+.form-floating input {
+    margin: 3px 0px;
+    padding: .375rem .75rem;
+    border: 2px solid #CCC;
+    height: 50px !important;
+    padding-top: 24px;
+}
+
+.collapsibleSection {
+    max-height: 0px;
+    overflow: hidden;
+    transition: max-height 1s ease;
+}
+
+.collapsibleSection.open {
+    max-height: 1000px;
+}
+
+/*****************************************
+*   Feed page styles
+*****************************************/
+@font-face {
+    font-family: 'fira-sans';
+    src: url('../fonts/firasans-regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+}
+
+#login form input,
+#forgotPassword form input,
+#signup form input {
+    margin-bottom: 3px;
+}
+
+#forgotPassword,
+#signup {
+    display: none;
+}
+
+#showForgot {
+    float: right;
+}
+
+#forgotPasswordStatus {
+    display: none;
+}
+
+#feedList, #articleList {
+    display: inline-block;
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+
+.contentRow {
+    width: 100%;
+    display: inline-block;
+    border-bottom: 1px solid #CCC;
+    line-height:40px;
+}
+
+#feedHeader {
+    background-color: #FFFFFF;
+    line-height: 40px;
+    color: #1a1a1a;
+}
+
+#feedHeader .itemName {
+    font-size: 13pt;
+    color: #1a1a1a;
+    font-weight: bold;
+    font-family: fira-sans;
+}
+
+.feedItem {
+    line-height: 18px;
+    padding: 8px 0px;
+    width: 100%;
+    display: block;
+    font-family: arial, sans-serif;
+    border-bottom: 1px solid #CCC;
+    position: relative;
+    font-weight: inherit;
+    color: #1a1a1a;
+    background-color: #FFFFFF;
+}
+
+.itemName {
+    font-family: Arial;
+    display: inline-block;
+    position: relative;
+    padding-left: 10px;
+    font-size: 13px;
+    text-decoration: none;
+    color: #1a1a1a;
+}
+
+.hasNewItems > .itemName,
+.isNewItem > .itemName {
+    font-weight: bold;
+}
+
+.newItemCount {
+    float: right;
+    display: none;
+    height: 100%;
+    position: relative;
+    width: auto;
+    margin-right: 10px;
+    z-index: 100;
+    font-size: 13px;
+    font-weight: bold;
+    color: #69bb37;
+    cursor: pointer;
+}
+
+.articleText {
+    font-size: 13px;
+    border-bottom: 0.3vh solid #CCC;
+    padding: 1.07vh 3.25vh 2.143vh 3.25vh;
+    font-family: Arial, sans-serif;
+    word-wrap: break-word;
+    overflow: hidden;
+    position: relative;
+    height: auto;
+}
+
+.articleDate {
+    display: block;
+    text-align: right;
+    font-style: italic;
+    margin-bottom: 5px;
+    font-size: 12px;
+}
+
+#feedList .deleteBtn {
+    display: none;
+    float: right;
+    padding: 3px 9px;
+    margin: -4px 2px 0px 0px;
+}
+
+#feedList #accountBtn,
+#feedList #editFeedsBtn {
+    display: inline-block;
+}
+
+#feedList.showEdit #accountBtn,
+#feedList.showEdit #editFeedsBtn {
+    display: none;
+}
+
+#feedList #cancelEditBtn {
+    display: none;
+}
+
+#feedList.showEdit #cancelEditBtn {
+    display: inline-block;
+}
+
+#feedList .feedItem {
+    background-color: #FFFFFF;
+}
+
+#feedList .feedItem:hover,
+#feedList .feedItem:active {
+    background-color: #f7f7f7;
+}
+
+#feedList .hasNewItems > .newItemCount {
+    display: inline-block;
+}
+
+#feedList .feedIcon {
+    height: 18px;
+    width: 18px;
+    display: inline-block;
+    float: left;
+    margin: 1px 4px;
+    background-size: 100%;
+}
+
+#feedList #feedHeader > .itemName {
+    padding-left: 10px;
+}
+
+#feedList #feedHeader > .itemName > img {
+    margin-right: 5px;
+}
+
+#feedList .itemName {
+    padding-left: 2px;
+    max-width: calc(100% - 70px);
+}
+
+#feedList .deleteBtn {
+    display: none;
+}
+
+#feedList.showEdit .deleteBtn {
+    display: inline-block;
+}
+
+#feedList.showEdit .itemName {
+    display: inline-block;
+    max-width: calc(100% - 125px);
+}
+
+#feedList #noFeeds {
+    padding: 8px 10px;
+}
+
+/*****************************************
+*   Header area styles
+*****************************************/
+#feedHeader {
+    display: inline-block;
+    padding: 8px 0px;
+    width: 100%;
+    display: block;
+    font-family: arial, sans-serif;
+    border-bottom: 1px solid #CCC;
+    position: relative;
+    font-weight: inherit;
+    color: #1a1a1a;
+    background-color: #FFFFFF;
+    line-height: 40px;
+}
+
+#nameplate {
+    font-size: 13pt;
+    color: #1a1a1a;
+    font-weight: bold;
+    font-family: fira-sans;
+    max-width: calc(100% - 70px);
+    padding-left: 10px;
+}
+
+#loginHeader #nameplate{
+    line-height:40px;
+}
+
+#nameplate > img {
+    margin-right: 5px;
+}
+
+#editAccountBtn,
+#cancelEditBtn,
+#enterBtn,
+#saveEnterBtn,
+#cancelEnterBtn {
+    float: right;
+    margin: 3px;
+    display: inline-block;
+}
+
+#logoutLink {
+    float: right;
+    margin: 0px 5px;
+    display: inline-block;
+}
+
+/*****************************************
+*   Edit Account Area
+*****************************************/
+#deleteAccountModal {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/*****************************************
+*   Articles page
+*****************************************/
+#articleList .feedItem {
+    background-color: #e9ebf6;
+}
+
+#articleList .feedIcon {
+    height: 32px;
+    width: 32px;
+    display: inline-block;
+    float: left;
+    margin: 5px 5px;
+    background-size: 100%;
+}
+#articleList #feedHeader {
+    background-color: #FFFFFF !important;
+}
+#articleList #feedHeader a .itemName {
+    padding-left: 2px;
+    max-width: calc(100% - 152px);
+    display: inline-block;
+    line-height: 24px;
+}
+
+#articleList .itemName {
+    color: #0055b1;
+    max-width: calc(100% - 30px);
+}
+
+#articleList .newItemCount {
+    display: inline-block;
+}
+
+#articleList .isNewItem > a {
+    max-width: calc(100% - 45px);
+}
+
+#articleList .articleText img,
+#articleList .articleText video{
+    max-width: 100%;
+    height: auto;
+}

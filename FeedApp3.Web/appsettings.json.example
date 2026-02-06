@@ -1,0 +1,17 @@
+{
+  "Application": {
+    "ApiBaseUrl": "http://localhost:5256",
+    "AuthBaseUrl": "http://localhost:5256"
+  },
+  "RemoteLogging": {
+    "ApplicationName": "FeedApp3.Web",
+    "Endpoint": "http://localhost:5256/logs/logerror"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

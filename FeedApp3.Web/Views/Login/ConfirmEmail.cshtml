@@ -1,0 +1,75 @@
+﻿@model ResendEmailConfirmationModel
+
+@{
+    ViewBag.Title = "Feed App 3 - Confirm Email";
+}
+
+<partial name="LoginHeaderPartial" />
+
+<div class="contentRow fs-5 p-2 text-center fw-bold" style="border-top: 1px solid #CCC;">
+    Email Confirmation
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div id="errorMessage" class="contentRow p-3 text-danger" style="line-height: 22px;">
+        <strong>Confirmation failed.</strong><br />
+        <div asp-validation-summary="ModelOnly" class="text-danger validationSummaryContainer"></div>
+    </div>
+
+    <div id="resendConfirmationEmailFormContainer" class="contentRow ps-3 pe-3" style="padding-top: 3px;padding-bottom: 3px;">
+        @using (Html.BeginForm("ResendConfirmationEmail", "Login", FormMethod.Post, new { @id = "resendConfirmationForm" }))
+        {
+            @Html.AntiForgeryToken()
+
+            <div class="pt-3">Enter your email address to resend the confirmation link.</div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.Email)
+                @Html.TextBoxFor(m => m.Email, new { @class = "form-control", @readonly = "true", onfocus = "this.readOnly = false;", onblur = "this.readOnly = true;" })
+                @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="pt-3 pb-3">
+                <button type="submit" class="btn btn-success mt-3 mb-3">
+                    <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                    Resend confirmation email
+                </button>
+            </div>
+        }
+    </div>
+
+    <div id="emailConfirmationResentMessage" class="contentRow pt-4 pb-4 ps-3 pe-3 d-none" style="line-height: 22px;">
+        <strong>Email sent!</strong><br />
+        We’ve sent a new confirmation link to your email.<br />
+        Click the link to activate your account and sign in.
+    </div>
+}
+else
+{
+    <div class="contentRow pt-4 pb-4 ps-3 pe-3" style="line-height: 22px;">
+        <strong>Email confirmed!</strong><br />
+        You can now sign in to your account.
+    </div>
+}
+
+@if (!ViewData.ModelState.IsValid)
+{
+    @section Scripts {
+        <script>
+            document.addEventListener('DOMContentLoaded', async function() {
+                await addSubmitFormListener(
+                    "resendConfirmationForm",
+                    function () {
+                        document.getElementById('resendConfirmationEmailFormContainer').classList.add("d-none");
+                        document.getElementById('emailConfirmationResentMessage').classList.remove("d-none");
+                        document.getElementById('errorMessage').classList.add("d-none");
+                        document.getElementById('errorMessage').innerHTML = '';
+                    }, function (errorString) {
+                        document.getElementById('errorMessage').classList.remove("d-none");
+                        document.getElementById('errorMessage').innerHTML = errorString;
+                    });
+            });
+        </script>
+    }
+}

@@ -1,0 +1,53 @@
+﻿@model LoginModel
+
+<div class="collapsibleSection open" id="signInSection">
+    <div class="contentRow fw-bold text-center fs-5 pt-2 pb-2" style="border-top: 1px solid #CCC;">
+        Sign In
+    </div>
+
+    <div id="loginFormContainer" class="contentRow ps-3 pe-3 pt-3 pb-0">
+        @using (Html.BeginForm("Login", "Login", FormMethod.Post, new { @id = "loginForm" }))
+        {
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger validationSummaryContainer"></div>
+
+            <div class="form-floating">
+                @Html.TextBoxFor(m => m.LoginEmail, new { @class = "form-control", placeholder = " ", id = "emailLogin" })
+                @Html.LabelFor(m => m.LoginEmail)
+                @Html.ValidationMessageFor(m => m.LoginEmail, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="form-floating">
+                @Html.PasswordFor(m => m.LoginPassword, new { @class = "form-control", placeholder = " ", id = "passwordLogin" })
+                @Html.LabelFor(m => m.LoginPassword)
+                @Html.ValidationMessageFor(m => m.LoginPassword, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="pt-3 pb-3 w-100 d-inline-block" style="padding-top: 3px;padding-bottom: 3px;">
+                <button type="submit" class="btn btn-primary float-start">
+                    <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                    Sign In
+                </button>
+                <a asp-controller="Login" asp-action="ForgotPassword" class="float-end" style="line-height: 35px;">Forgot password?</a>
+            </div>
+        }
+    </div>
+
+    <div class="contentRow text-center text-white bg-primary" style="padding-top: 13px;padding-bottom: 13px;">
+        <div class="width-100 fs-6">Register a new account</div>
+        <button class="btn btn-light" onclick="toggleSection(); return false;">Sign Up</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById("loginForm").addEventListener('submit', function (e) {
+            if (!$("#loginForm").valid()) {
+                return;
+            }
+            //show spinner
+            const submitBtn = document.querySelector('#loginForm button[type="submit"] span.spinner-border');
+            submitBtn.classList.remove("d-none");
+        });
+    });
+</script>

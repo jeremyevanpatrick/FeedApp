@@ -1,0 +1,95 @@
+﻿@using FeedApp3.Shared.Services.DTOs
+@model List<FeedDto>
+@{
+    ViewBag.Title = "Feed App 3";
+}
+
+@Html.AntiForgeryToken()
+
+<div id="errorMessage" class="contentRow p-3 text-danger @(!string.IsNullOrWhiteSpace(ViewBag.ErrorMessage) ? string.Empty : "d-none")" style="line-height: 22px;">
+    @ViewBag.ErrorMessage
+</div>
+
+<div id="feedList">
+
+    <div id="feedHeader">
+        <span class="itemName">
+            <img src="~/favicon.ico" /> Feed App
+        </span>
+        <button id="editFeedsBtn" class="btn btn-primary float-end" style="margin:3px;" onclick="showEditMode()">Edit</button>
+        <button id="cancelEditBtn" class="btn btn-secondary float-end" style="margin:3px;" onclick="hideEditMode()">Done</button>
+        <a id="accountBtn" asp-controller="Home" asp-action="Account" class="btn btn-primary float-end" style="margin: 3px;">Profile</a>
+    </div>
+
+    <partial name="AddFeedPartial" model="new AddFeedModel()" />
+
+    @if (Model?.Any() == true)
+    {
+        foreach (FeedDto feed in Model)
+        {
+            <div class="feedItem @(feed.UnreadArticleCount > 0 ? "hasNewItems" : string.Empty)" data-feed-id="@(feed.FeedId)">
+                <span class="feedIcon" style="background-image:url('@feed.FaviconImage');"></span><a asp-controller="Home" asp-action="Articles" asp-route-feedId="@feed.FeedId" class="itemName">@feed.FeedTitle</a>
+                <span class="deleteBtn btn btn-danger" onclick="deleteFeed('@(feed.FeedId)')">Delete</span>
+                @if (feed.UnreadArticleCount > 0)
+                {
+                    <span class="newItemCount" onclick="markFeedAsRead('@(feed.FeedId)')">@feed.UnreadArticleCount.ToString()</span>
+                }
+            </div>
+        }
+    }
+
+    <div id="noFeeds" class="feedItem @(Model?.Any() == true ? "d-none" : string.Empty)">
+        <span class="itemName">No feeds were found.</span>
+    </div>
+</div>
+
+<div asp-validation-summary="ModelOnly" class="text-danger validationSummaryContainer contentRow ps-3 pe-3"></div>
+
+@section Scripts {
+    <script>
+        async function markFeedAsRead(feedId) {
+            const json = {
+                "FeedId": feedId
+            };
+            await postJson('@Url.Action("MarkFeedAsRead", "Home")', json, function(){
+                document.querySelector('.feedItem[data-feed-id="'+feedId+'"]')?.classList.remove('hasNewItems');
+                document.querySelector('.feedItem[data-feed-id="'+feedId+'"] .newItemCount')?.remove();
+                document.getElementById('errorMessage').classList.add("d-none");
+                document.getElementById('errorMessage').innerHTML = '';
+            }, function(errorString){
+                document.getElementById('errorMessage').classList.remove("d-none");
+                document.getElementById('errorMessage').innerHTML = errorString;
+            });
+        }
+
+        async function deleteFeed(feedId) {
+            const json = {
+                "FeedId": feedId
+            };
+            await postJson('@Url.Action("DeleteFeed", "Home")', json, function(){
+                document.querySelector('.feedItem[data-feed-id="'+feedId+'"]').remove();
+                //if deleting removes the last feed, show no feeds message
+                if(document.querySelectorAll('.feedItem').length == 1){
+                    document.getElementById('noFeeds').classList.remove("d-none");
+                }
+                document.getElementById('errorMessage').classList.add("d-none");
+                document.getElementById('errorMessage').innerHTML = '';
+            }, function(errorString){
+                document.getElementById('errorMessage').classList.remove("d-none");
+                document.getElementById('errorMessage').innerHTML = errorString;
+            });
+        }
+
+        function showEditMode() {
+            document.getElementById('addFeedSection').classList.add('open');
+            document.getElementById('feedList').classList.add('showEdit');
+        }
+
+        function hideEditMode() {
+            document.getElementById('addFeedSection').classList.remove('open');
+            document.getElementById('feedList').classList.remove('showEdit');
+            resetFormAjax('addFeedForm', 'addFeedErrorMessage');
+        }
+
+    </script>
+}

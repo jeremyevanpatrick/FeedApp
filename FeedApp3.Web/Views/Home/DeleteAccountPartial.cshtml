@@ -1,0 +1,62 @@
+﻿@model DeleteAccountModel
+
+<div id="deleteAccountModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" style="display:none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            @using (Html.BeginForm("DeleteAccount", "Home", FormMethod.Post, new { id = "deleteAccountForm" }))
+            {
+                @Html.AntiForgeryToken()
+                
+                <div class="modal-body" style="line-height: 40px;">
+                    <div id="deleteAccountErrorMessage" class="text-danger d-none"></div>
+                    <strong>Are you sure you want to permanently delete your account?</strong>
+                    <div class="d-inline-block w-100 mt-2">
+                        @Html.LabelFor(m => m.DeleteAccountPassword, "Enter password to confirm this action:")
+                        @Html.PasswordFor(m => m.DeleteAccountPassword, new { @class = "form-control", @readonly = "true", onfocus = "this.readOnly = false;", onblur = "this.readOnly = true;" })
+                        @Html.ValidationMessageFor(m => m.DeleteAccountPassword, "", new { @class = "text-danger" })
+                        <div class="text-danger">Warning: This action cannot be reversed.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="hideDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="confirmDeleteAccountBtn">
+                        <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                        Yes, delete
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="contentRow ps-3 pe-3 fw-bold bg-primary text-white">Delete Account</div>
+<div class="contentRow ps-3 pe-3">
+    <div class="d-inline-block w-100">Delete all user data</div>
+    <button class="btn btn-danger mt-2 mb-3 d-block" onclick="showDeleteModal()">Delete</button>
+</div>
+
+<script>
+    function showDeleteModal() {
+        var modal = document.getElementById('deleteAccountModal');
+        modal.style.display = 'block';
+        modal.classList.add('show');
+    }
+
+    function hideDeleteModal() {
+        var modal = document.getElementById('deleteAccountModal');
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        resetFormAjax('deleteAccountForm', 'deleteAccountErrorMessage');
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        await addSubmitFormListener(
+            "deleteAccountForm",
+            function(){
+                window.location.href = '@Url.Action("Logout", "Home")?message=Account successfully deleted';
+            }, function(errorString){
+                document.getElementById('deleteAccountErrorMessage').classList.remove("d-none");
+                document.getElementById('deleteAccountErrorMessage').innerHTML = errorString;
+            });
+    });
+</script>

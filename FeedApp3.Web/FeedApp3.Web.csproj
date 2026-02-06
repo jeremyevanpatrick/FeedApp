@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Services\AuthStateTokenProvider.cs" />
+    <Compile Remove="Services\CustomAuthStateProvider.cs" />
+    <Compile Remove="Services\IAccessTokenProvider.cs" />
+    <Compile Remove="Services\IAuthenticatedHttpClient.cs" />
+    <Compile Remove="Services\IPublicHttpClient.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Views\Login\ConfirmEmailChangePage.razor" />
+    <Content Remove="Views\Login\ResetPasswordPage.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
+
+</Project>

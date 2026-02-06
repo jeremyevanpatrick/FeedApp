@@ -1,0 +1,24 @@
+﻿@{
+    ViewBag.Title = "Feed App 3 - Confirm Email Change";
+}
+
+<partial name="LoginHeaderPartial" />
+
+<div class="contentRow fs-5 p-2 text-center fw-bold" style="border-top: 1px solid #CCC;">
+    Email Change Confirmation
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div id="errorMessage" class="contentRow p-3 text-danger" style="line-height: 22px;">
+        <strong>Confirmation failed.</strong><br />
+        <div asp-validation-summary="ModelOnly" class="text-danger validationSummaryContainer"></div>
+    </div>
+}
+else
+{
+    <div class="contentRow pt-4 pb-4 ps-3 pe-3" style="line-height: 22px;">
+        <strong>Email confirmed!</strong><br />
+        Your email address is now updated.
+    </div>
+}

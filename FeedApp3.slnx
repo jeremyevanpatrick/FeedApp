@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="FeedApp3.Api/FeedApp3.Api.csproj" />
+  <Project Path="FeedApp3.Web/FeedApp3.Web.csproj" Id="09872f27-4aaf-4699-bcef-c90073030d88" />
+  <Project Path="Shared/Shared.csproj" />
+</Solution>

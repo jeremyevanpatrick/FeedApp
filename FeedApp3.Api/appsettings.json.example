@@ -1,0 +1,42 @@
+{
+  "Application": {
+    "MinimumActiveUserRefreshIntervalInMinutes": 360
+  },
+  "ConnectionStrings": {
+    "LoggingDb": "YOUR_LOGGING_DB_CONNECTION_STRING",
+    "DefaultConnection": "YOUR_DEFAULT_DB_CONNECTION_STRING"
+  },
+  "RemoteLogging": {
+    "ApplicationName": "FeedApp3.Api",
+    "Endpoint": "http://localhost:5256/logs/logerror"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Client": {
+    "Host": "http://localhost:5267"
+  },
+  "Jwt": {
+    "Key": "YOUR_SECRET_JWT_KEY",
+    "Issuer": "FeedApp3.Api",
+    "Audience": "FeedApp3.Api",
+    "ExpireMinutes": 15
+  },
+  "Smtp": {
+    "Host": "YOUR_SMTP_HOST",
+    "Port": 587,
+    "EnableSsl": true,
+    "Username": "YOUR_SMTP_USERNAME",
+    "Password": "YOUR_SMTP_PASSWORD",
+    "FromEmail": "YOUR_EMAIL_ADDRESS",
+    "FromName": "FeedApp3"
+  },
+  "DataCleanup": {
+    "OlderThanDays": 30,
+    "ScheduledHour": 3
+  },
+  "AllowedHosts": "*"
+}

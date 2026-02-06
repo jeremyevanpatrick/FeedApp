@@ -1,0 +1,59 @@
+﻿@model AddFeedModel
+
+<style>
+    #addFeedSection {
+        background-color: #FFFFFF;
+        border-bottom-width: 0px;
+    }
+    #addFeedSection input.form-control {
+        margin-bottom: 5px;
+    }
+    #addFeedSection.collapsibleSection {
+        transition: max-height 0.5s ease;
+    }
+    #addFeedSection.collapsibleSection.open {
+        max-height: 200px;
+    }
+</style>
+
+<div id="addFeedSection" class="collapsibleSection p-0">
+    <div class="contentRow ps-3 pe-3 fw-bold bg-primary text-white">Add Feed</div>
+
+    <div id="addFeedFormContainer" class="contentRow ps-3 pe-3 pb-3">
+        @using (Html.BeginForm("AddFeed", "Home", FormMethod.Post, new { id = "addFeedForm" }))
+        {
+            @Html.AntiForgeryToken()
+            <div id="addFeedErrorMessage" class="text-danger d-none"></div>
+
+            @Html.LabelFor(m => m.FeedUrl, "Feed Url", new { @class = "w-100" })
+            @Html.TextBoxFor(m => m.FeedUrl, new { @class = "form-control float-start", style = "margin:3px 0;width: calc(100% - 40px);" })
+            <button type="submit" class="btn btn-success float-end text-center" style="width:34px; margin: 4px 0;">
+                <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true" style="margin-left: -3px;"></span>
+                <span id="plusText">+</span>
+            </button>
+            @Html.ValidationMessageFor(m => m.FeedUrl, "", new { @class = "text-danger float-start", @style = "line-height:22px;" })
+        }
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        document.getElementById("addFeedForm").addEventListener('submit', async function (e) {
+            if (!$("#addFeedForm").valid()) {
+                return;
+            }
+            document.getElementById('plusText').classList.add("d-none");
+        });
+
+        await addSubmitFormListener(
+            "addFeedForm",
+            function(){
+                document.getElementById('addFeedFormContainer').classList.add("d-none");
+                window.location.href = '@Url.Action("Feeds", "Home")';
+            }, function(errorString){
+                document.getElementById('plusText').classList.remove("d-none");
+                document.getElementById('addFeedErrorMessage').classList.remove("d-none");
+                document.getElementById('addFeedErrorMessage').innerHTML = errorString;
+            });
+    });
+</script>

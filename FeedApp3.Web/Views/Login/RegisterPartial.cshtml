@@ -1,0 +1,66 @@
+﻿@model RegisterModel
+
+<div class="collapsibleSection" id="signUpSection">
+    <div class="contentRow text-center text-white bg-primary" style="padding-top: 13px;padding-bottom: 13px;">
+        <div class="width-100 fs-6">Sign in with existing account</div>
+        <button class="btn btn-light" onclick="toggleSection(); return false;">Sign In</button>
+    </div>
+
+    <div class="contentRow fw-bold text-center fs-5 pt-2 pb-2">
+        Register new account
+    </div>
+
+    <div id="registerFormContainer" class="contentRow ps-3 pe-3 pt-3 pb-0">
+        @using (Html.BeginForm("Register", "Login", FormMethod.Post, new { @id = "registerForm" }))
+        {
+            @Html.AntiForgeryToken()
+            <div id="registerErrorMessage" class="text-danger pb-3 d-none"></div>
+
+            <div class="form-floating">
+                @Html.TextBoxFor(m => m.RegisterEmail, new { @class = "form-control", placeholder = " ", id = "emailRegister", autocomplete = "off", @readonly = "true", onfocus = "this.readOnly = false;", onblur = "this.readOnly = true;" })
+                @Html.LabelFor(m => m.RegisterEmail)
+                @Html.ValidationMessageFor(m => m.RegisterEmail, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="form-floating">
+                @Html.PasswordFor(m => m.RegisterPassword, new { @class = "form-control", placeholder = " ", id = "passwordRegister", autocomplete = "new-password", @readonly = "true", onfocus = "this.readOnly = false;", onblur = "this.readOnly = true;" })
+                @Html.LabelFor(m => m.RegisterPassword)
+                @Html.ValidationMessageFor(m => m.RegisterPassword, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="form-floating">
+                @Html.PasswordFor(m => m.RegisterPasswordRepeat, new { @class = "form-control", placeholder = " ", id = "passwordRepeatRegister", autocomplete = "new-password", @readonly = "true", onfocus = "this.readOnly = false;", onblur = "this.readOnly = true;" })
+                @Html.LabelFor(m => m.RegisterPasswordRepeat, "Password Repeat")
+                @Html.ValidationMessageFor(m => m.RegisterPasswordRepeat, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="pt-3 pb-3 w-100 d-inline-block">
+                <button type="submit" class="btn btn-primary float-start">
+                    <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                    Sign Up
+                </button>
+            </div>
+        }
+    </div>
+
+    <div id="registerSuccessMessage" class="contentRow pt-4 pb-4 ps-3 pe-3 d-none" style="line-height: 22px;">
+        <strong>Account created! Please confirm your email address.</strong><br />
+        We've sent a confirmation link to your email.<br />
+        Click the link to activate your account and sign in.
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        await addSubmitFormListener(
+            "registerForm",
+            function () {
+                document.getElementById('registerFormContainer').classList.add("d-none");
+                document.getElementById('registerSuccessMessage').classList.remove("d-none");
+            }, function (errorString) {
+                document.getElementById('registerErrorMessage').classList.remove("d-none");
+                document.getElementById('registerErrorMessage').innerHTML = errorString;
+            });
+    });
+</script>
