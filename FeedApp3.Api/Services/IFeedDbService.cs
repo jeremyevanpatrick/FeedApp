@@ -24,5 +24,11 @@ namespace FeedApp3.Api.Services
 
         public Task DeleteUserDataAsync(Guid userId);
 
+        public Task CreateFeedUpdateAsync(Guid userId);
+
+        public Task<List<FeedUpdate>> GetPendingFeedUpdatesAsync(int batchSize);
+
+        public Task DeleteFeedUpdatesAsync(List<Guid> userIds);
+
     }
 }

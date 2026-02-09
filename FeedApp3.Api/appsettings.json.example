@@ -1,6 +1,8 @@
 {
   "Application": {
-    "MinimumActiveUserRefreshIntervalInMinutes": 360
+    "MinimumActiveUserRefreshIntervalInMinutes": 360,
+    "FeedUpdateBatchSize": 30,
+    "FeedUpdateMaxParallelism": 5
   },
   "ConnectionStrings": {
     "LoggingDb": "YOUR_LOGGING_DB_CONNECTION_STRING",

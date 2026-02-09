@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Feed> Feeds { get; set; }
     public DbSet<Article> Articles { get; set; }
+    public DbSet<FeedUpdate> FeedUpdates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

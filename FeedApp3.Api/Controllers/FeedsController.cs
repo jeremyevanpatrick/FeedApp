@@ -2,13 +2,11 @@ using FeedApp3.Api.Extensions;
 using FeedApp3.Api.Helpers;
 using FeedApp3.Api.Models;
 using FeedApp3.Api.Services;
-using FeedApp3.Api.Settings;
 using FeedApp3.Shared.Helpers;
 using FeedApp3.Shared.Services.DTOs;
 using FeedApp3.Shared.Services.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using Shared.Helpers;
 
 namespace FeedApp3.Api.Controllers
@@ -19,26 +17,17 @@ namespace FeedApp3.Api.Controllers
     public class FeedsController : ControllerBaseExtended
     {
         private readonly ILogger<FeedsController> _logger;
-        private readonly IServiceScopeFactory _scopeFactory;
         private readonly IFeedDbService _feedDbService;
         private readonly RssHttpClient _rssClient;
-        private readonly ApplicationSettings _applicationSettings;
-        private readonly IBackgroundTaskQueue _taskQueue;
 
         public FeedsController(
             ILogger<FeedsController> logger,
-            IServiceScopeFactory scopeFactory,
             IFeedDbService feedDbService,
-            IHttpClientFactory httpClientFactory,
-            IOptions<ApplicationSettings> applicationSettings,
-            IBackgroundTaskQueue taskQueue)
+            IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
-            _scopeFactory = scopeFactory;
             _feedDbService = feedDbService;
             _rssClient = new RssHttpClient(httpClientFactory);
-            _applicationSettings = applicationSettings.Value;
-            _taskQueue = taskQueue;
         }
 
         [HttpGet("getfeedlist")]
@@ -53,7 +42,7 @@ namespace FeedApp3.Api.Controllers
                 List<Feed> feeds = await _feedDbService.GetListByUserId(userId);
                 List<FeedDto?> feedDtos = feeds.Select(f => FeedMapper.ToDto(f)).ToList();
 
-                await UpdateList(feeds);
+                await _feedDbService.CreateFeedUpdateAsync(userId);
 
                 return Ok(feedDtos);
             }
@@ -63,47 +52,6 @@ namespace FeedApp3.Api.Controllers
                     { "UserId", userId.ToString() }
                 });
                 return Problem("An unexpected error occurred. Please try again later.");
-            }
-        }
-
-        private async Task UpdateList(List<Feed> feedSummaryList)
-        {
-            foreach (Feed feedSummary in feedSummaryList)
-            {
-                await _taskQueue.QueueBackgroundWorkItemAsync(async token =>
-                {
-                    using var scope = _scopeFactory.CreateScope();
-
-                    var feedDbService = scope.ServiceProvider.GetRequiredService<IFeedDbService>();
-
-                    try
-                    {
-                        if (feedSummary.LastChecked < DateTime.UtcNow.AddMinutes(-_applicationSettings.MinimumActiveUserRefreshIntervalInMinutes))
-                        {
-                            Feed? existingFeed = await feedDbService.GetByFeedId(feedSummary.UserId, feedSummary.FeedId);
-                            if (existingFeed == null)
-                            {
-                                _logger.LogErrorWithDictionary(FeedErrorCodes.UpdateFeedNotFound, null, "Existing feed not found during update", new Dictionary<string, string> {
-                                    { "UserId", feedSummary.UserId.ToString() },
-                                    { "FeedId", feedSummary.FeedId.ToString() }
-                                });
-                            }
-                            else
-                            {
-                                FeedDto latestFeedDto = await _rssClient.ImportFeedFromUrl(existingFeed.FeedUrl, existingFeed.LastModified);
-                                Feed latestFeed = FeedMapper.ToEntity(latestFeedDto);
-                                await feedDbService.UpdateAsync(existingFeed, latestFeed);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogErrorWithDictionary(FeedErrorCodes.UpdateFeedUnexpected, ex, "Unexpected error while updating feed", new Dictionary<string, string> {
-                            { "UserId", feedSummary.UserId.ToString() },
-                            { "FeedId", feedSummary.FeedId.ToString() }
-                        });
-                    }
-                });
             }
         }
 

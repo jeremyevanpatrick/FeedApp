@@ -115,5 +115,42 @@ namespace FeedApp3.Api.Services
                 .ExecuteDeleteAsync();
         }
 
+        public async Task CreateFeedUpdateAsync(Guid userId)
+        {
+            var isAlreadyRequested = await _db.FeedUpdates.AnyAsync(u => u.UserId == userId);
+            if (isAlreadyRequested)
+            {
+                return;
+            }
+
+            _db.FeedUpdates.Add(new FeedUpdate
+            {
+                UserId = userId,
+                RequestedAt = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task<List<FeedUpdate>> GetPendingFeedUpdatesAsync(int batchSize)
+        {
+            var result = await _db.FeedUpdates
+                .OrderBy(f => f.RequestedAt)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return result
+                .GroupBy(f => f.UserId)
+                .Select(g => g.First())
+                .Take(batchSize)
+                .ToList();
+        }
+
+        public async Task DeleteFeedUpdatesAsync(List<Guid> userIds)
+        {
+            await _db.FeedUpdates
+                .Where(u => userIds.Contains(u.UserId))
+                .ExecuteDeleteAsync();
+        }
+
     }
 }

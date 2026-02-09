@@ -61,9 +61,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<AuthDbContext>()
 .AddDefaultTokenProviders();
 
-builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
-builder.Services.AddHostedService<QueuedHostedService>();
-
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()!;
 
 builder.Services.AddAuthentication(options =>
@@ -100,6 +97,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddAuthorization();
 
 builder.Services.AddHostedService<DataCleanupService>();
+builder.Services.AddHostedService<FeedUpdateService>();
 
 var app = builder.Build();
 
