@@ -24,8 +24,14 @@ namespace FeedApp3.Web.Services
                 //ajax request
                 if (context.Exception is HttpRecoverableError)
                 {
+                    bool isUnauthorized = false;
+                    if (((HttpRecoverableError)context.Exception).IsUnauthorized)
+                    {
+                        isUnauthorized = true;
+                    }
+
                     //user error
-                    context.Result = new JsonResult(new { detail = context.Exception.Message })
+                    context.Result = new JsonResult(new { detail = context.Exception.Message, isUnauthorized = isUnauthorized })
                     {
                         StatusCode = (int)((HttpRecoverableError)context.Exception).HttpStatusCode
                     };
@@ -48,6 +54,18 @@ namespace FeedApp3.Web.Services
                 //page navigation
                 if (context.Exception is HttpRecoverableError)
                 {
+                    if (((HttpRecoverableError)context.Exception).IsUnauthorized)
+                    {
+                        context.Result = new RedirectToActionResult(
+                            actionName: "Login",
+                            controllerName: "Login",
+                            routeValues: new { message = context.Exception.Message }
+                        );
+                        context.HttpContext.Response.StatusCode = (int)((HttpRecoverableError)context.Exception).HttpStatusCode;
+                        context.ExceptionHandled = true;
+                        return;
+                    }
+
                     //user error
                     context.ModelState.AddModelError(string.Empty, context.Exception.Message);
                     context.HttpContext.Response.StatusCode = (int)((HttpRecoverableError)context.Exception).HttpStatusCode;

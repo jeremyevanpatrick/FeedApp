@@ -25,14 +25,14 @@ namespace FeedApp3.Web.Data
         {
             string requestUrl = $"{_apiBaseUrl}/feeds/getfeedlist";
 
-            return await _requestHelperAuthenticated.GetAsync<List<FeedDto>>(requestUrl, null, 9000);
+            return await _requestHelperAuthenticated.GetAsync<List<FeedDto>>(requestUrl, null, 30000);
         }
 
         public async Task<FeedDto> GetFeedById(Guid feedId)
         {
             string requestUrl = $"{_apiBaseUrl}/feeds/getfeedbyid?feedId={feedId}";
 
-            return await _requestHelperAuthenticated.GetAsync<FeedDto>(requestUrl, null, 9000);
+            return await _requestHelperAuthenticated.GetAsync<FeedDto>(requestUrl, null, 30000);
         }
 
         public async Task Create(string feedUrl)
@@ -40,7 +40,7 @@ namespace FeedApp3.Web.Data
             string requestUrl = $"{_apiBaseUrl}/feeds/create";
 
             CreateFeedRequest request = new CreateFeedRequest(feedUrl);
-            await _requestHelperAuthenticated.PostAsync<CreateFeedRequest>(requestUrl, request, null, 30000);
+            await _requestHelperAuthenticated.PostAsync<CreateFeedRequest>(requestUrl, request, null, 40000);
         }
 
         public async Task Update(Guid feedId)
@@ -48,7 +48,7 @@ namespace FeedApp3.Web.Data
             string requestUrl = $"{_apiBaseUrl}/feeds/update";
 
             UpdateFeedRequest request = new UpdateFeedRequest(feedId);
-            await _requestHelperAuthenticated.PostAsync<UpdateFeedRequest>(requestUrl, request, null, 30000);
+            await _requestHelperAuthenticated.PostAsync<UpdateFeedRequest>(requestUrl, request, null, 40000);
         }
 
         public async Task Delete(Guid feedId)
@@ -56,7 +56,7 @@ namespace FeedApp3.Web.Data
             string requestUrl = $"{_apiBaseUrl}/feeds/delete";
 
             DeleteFeedRequest request = new DeleteFeedRequest(feedId);
-            await _requestHelperAuthenticated.PostAsync<DeleteFeedRequest>(requestUrl, request, null, 9000);
+            await _requestHelperAuthenticated.PostAsync<DeleteFeedRequest>(requestUrl, request, null, 30000);
         }
 
         public async Task MarkFeedAsRead(Guid feedId)
@@ -64,7 +64,7 @@ namespace FeedApp3.Web.Data
             string requestUrl = $"{_apiBaseUrl}/feeds/markfeedasread";
 
             MarkFeedAsReadRequest request = new MarkFeedAsReadRequest(feedId);
-            await _requestHelperAuthenticated.PostAsync<MarkFeedAsReadRequest>(requestUrl, request, null, 9000);
+            await _requestHelperAuthenticated.PostAsync<MarkFeedAsReadRequest>(requestUrl, request, null, 30000);
         }
 
         public async Task MarkArticleAsRead(Guid articleId)
@@ -72,7 +72,7 @@ namespace FeedApp3.Web.Data
             string requestUrl = $"{_apiBaseUrl}/feeds/markarticleasread";
 
             MarkArticleAsReadRequest request = new MarkArticleAsReadRequest(articleId);
-            await _requestHelperAuthenticated.PostAsync<MarkArticleAsReadRequest>(requestUrl, request, null, 9000);
+            await _requestHelperAuthenticated.PostAsync<MarkArticleAsReadRequest>(requestUrl, request, null, 30000);
         }
     }
 }

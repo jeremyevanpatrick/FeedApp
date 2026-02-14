@@ -78,7 +78,8 @@ namespace FeedApp3.Shared.Helpers
 
                 if (!string.IsNullOrWhiteSpace(problemResponse?.ErrorCode) && RecoverableErrorCodes.Any(e=> e.ToString() == problemResponse.ErrorCode) && !string.IsNullOrWhiteSpace(problemResponse?.Detail))
                 {
-                    throw new HttpRecoverableError(problemResponse.Detail, response.StatusCode);
+                    bool isUnauthorized = ResponseErrorCodes.UNAUTHORIZED.ToString() == problemResponse.ErrorCode;
+                    throw new HttpRecoverableError(problemResponse.Detail, response.StatusCode, isUnauthorized);
                 }
             }
             //check for unrecoverable error
@@ -93,7 +94,9 @@ namespace FeedApp3.Shared.Helpers
             ResponseErrorCodes.PASSWORD_DOES_NOT_MEET_REQUIREMENTS,
             ResponseErrorCodes.EMAIL_ADDRESS_ALREADY_IN_USE,
             ResponseErrorCodes.ACCOUNT_LOCKED,
-            ResponseErrorCodes.AUTH_NO_LONGER_VALID
+            ResponseErrorCodes.AUTH_NO_LONGER_VALID,
+            ResponseErrorCodes.UNAUTHORIZED,
+            ResponseErrorCodes.FORBIDDEN
         };
 
     }

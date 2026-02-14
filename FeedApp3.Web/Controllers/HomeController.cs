@@ -121,12 +121,7 @@ namespace FeedApp3.Web.Controllers
                 _logger.LogErrorWithDictionary(WebErrorCodes.ControllerUnexpected, ex, "Unexpected error while logging out");
             }
 
-            if (!string.IsNullOrWhiteSpace(message))
-            {
-                TempData["Message"] = message;
-            }
-
-            return RedirectToAction("Login", "Login");
+            return RedirectToAction("Login", "Login", new { message = message });
         }
 
     }

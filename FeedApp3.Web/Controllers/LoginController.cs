@@ -20,11 +20,11 @@ namespace FeedApp3.Web.Controllers
         }
 
         [HttpGet]
-        public ViewResult Login()
+        public ViewResult Login(string? message)
         {
-            if (!string.IsNullOrWhiteSpace(TempData["Message"] as string))
+            if (!string.IsNullOrWhiteSpace(message))
             {
-                ViewBag.ErrorMessage = TempData["Message"];
+                ViewBag.ErrorMessage = message;
             }
 
             return View();

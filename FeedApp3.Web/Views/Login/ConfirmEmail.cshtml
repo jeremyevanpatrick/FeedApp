@@ -25,7 +25,7 @@
             <div class="pt-3">Enter your email address to resend the confirmation link.</div>
 
             <div class="form-group">
-                @Html.LabelFor(m => m.Email)
+                @Html.LabelFor(m => m.Email, new { @class = "w-100" })
                 @Html.TextBoxFor(m => m.Email, new { @class = "form-control", @readonly = "true", onfocus = "this.readOnly = false;", onblur = "this.readOnly = true;" })
                 @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
             </div>

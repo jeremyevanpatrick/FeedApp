@@ -11,7 +11,7 @@
                     <div id="deleteAccountErrorMessage" class="text-danger d-none"></div>
                     <strong>Are you sure you want to permanently delete your account?</strong>
                     <div class="d-inline-block w-100 mt-2">
-                        @Html.LabelFor(m => m.DeleteAccountPassword, "Enter password to confirm this action:")
+                        @Html.LabelFor(m => m.DeleteAccountPassword, "Enter password to confirm this action:", new { @class = "w-100" })
                         @Html.PasswordFor(m => m.DeleteAccountPassword, new { @class = "form-control", @readonly = "true", onfocus = "this.readOnly = false;", onblur = "this.readOnly = true;" })
                         @Html.ValidationMessageFor(m => m.DeleteAccountPassword, "", new { @class = "text-danger" })
                         <div class="text-danger">Warning: This action cannot be reversed.</div>

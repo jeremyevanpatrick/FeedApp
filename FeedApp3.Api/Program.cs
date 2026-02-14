@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Shared.Helpers;
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -81,6 +82,39 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtSettings.Key))
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+
+            return context.Response.WriteAsJsonAsync(new
+            {
+                title = "Unauthorized",
+                detail = "Your session has expired. Please sign in again.",
+                status = 401,
+                errorCode = ResponseErrorCodes.UNAUTHORIZED.ToString()
+            });
+        },
+
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+
+            return context.Response.WriteAsJsonAsync(new
+            {
+                title = "Forbidden",
+                detail = "You do not have permission to access this resource.",
+                status = 403,
+                errorCode = ResponseErrorCodes.FORBIDDEN.ToString()
+            });
+        }
+    };
 });
 
 builder.Services.AddRateLimiter(options =>
@@ -108,9 +142,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 app.MapControllers();
 

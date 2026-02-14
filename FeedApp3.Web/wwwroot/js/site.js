@@ -78,6 +78,10 @@ async function addSubmitFormListener(formId, successCallback, failureCallback) {
             try {
                 const responseJson = await response.json();
                 errorString = responseJson.detail;
+                if (responseJson.isUnauthorized == true) {
+                    window.location.href = '/Login/Login?message=' + encodeURIComponent(errorString);
+                    return;
+                }
             } catch { }
 
             failureCallback(errorString ?? "An unexpected error occurred. Please try again later.");
@@ -110,6 +114,10 @@ async function postJson(url, json, successCallback, failureCallback) {
         try {
             const responseJson = await response.json();
             errorString = responseJson.detail;
+            if (responseJson.isUnauthorized == true) {
+                window.location.href = '/Login/Login?message=' + encodeURIComponent(errorString);
+                return;
+            }
         } catch { }
 
         failureCallback(errorString ?? "An unexpected error occurred. Please try again later.");
