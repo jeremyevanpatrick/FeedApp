@@ -1,6 +1,10 @@
-using FeedApp3.Api.Data;
+using FeedApp3.Api.Data.Context;
+using FeedApp3.Api.Data.Repositories;
 using FeedApp3.Api.Models;
 using FeedApp3.Api.Services;
+using FeedApp3.Api.Services.Application;
+using FeedApp3.Api.Services.Background;
+using FeedApp3.Api.Services.External;
 using FeedApp3.Api.Settings;
 using FeedApp3.Shared.Services;
 using FeedApp3.Shared.Settings;
@@ -32,9 +36,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddSingleton<LoggingDbService>();
-builder.Services.AddScoped<IFeedDbService, FeedDbService>();
-builder.Services.AddScoped<IAuthDbService, AuthDbService>();
+builder.Services.AddSingleton<ErrorLogQueue>();
+builder.Services.AddSingleton<IErrorLogQueue>(sp => sp.GetRequiredService<ErrorLogQueue>());
+
+builder.Services.AddScoped<IFeedRepository, FeedRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+
+builder.Services.AddScoped<IFeedAppService, FeedAppService>();
+builder.Services.AddScoped<IAuthAppService, AuthAppService>();
+
+builder.Services.AddSingleton<IRssClient, RssClient>();
 
 builder.Services.Configure<RemoteLoggingSettings>(builder.Configuration.GetSection("RemoteLogging"));
 builder.Services.Configure<ApplicationSettings>(builder.Configuration.GetSection("Application"));
@@ -130,6 +141,7 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddHostedService<ErrorLoggingService>();
 builder.Services.AddHostedService<DataCleanupService>();
 builder.Services.AddHostedService<FeedUpdateService>();
 

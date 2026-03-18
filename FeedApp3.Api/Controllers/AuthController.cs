@@ -1,24 +1,15 @@
-﻿using FeedApp3.Api.Helpers;
-using FeedApp3.Api.Models;
-using FeedApp3.Api.Services;
-using FeedApp3.Api.Settings;
+﻿using FeedApp3.Api.Errors;
+using FeedApp3.Api.Exceptions;
+using FeedApp3.Api.Extensions;
+using FeedApp3.Api.Services.Application;
 using FeedApp3.Shared.Helpers;
 using FeedApp3.Shared.Services.Requests;
 using FeedApp3.Shared.Services.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Shared.Helpers;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace FeedApp3.Api.Controllers
 {
@@ -27,29 +18,14 @@ namespace FeedApp3.Api.Controllers
     public class AuthController : ControllerBaseExtended
     {
         private readonly ILogger<AuthController> _logger;
-        private readonly IAuthDbService _authDbService;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly ClientSettings _clientSettings;
-        private readonly JwtSettings _jwtSettings;
-        private readonly IEmailSender _emailSender;
+        private readonly IAuthAppService _authAppService;
 
         public AuthController(
             ILogger<AuthController> logger,
-            IAuthDbService authDbService,
-            UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            IOptions<ClientSettings> clientSettings,
-            IOptions<JwtSettings> jwtSettings,
-            IEmailSender emailSender)
+            IAuthAppService authAppService)
         {
             _logger = logger;
-            _authDbService = authDbService;
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _clientSettings = clientSettings.Value;
-            _jwtSettings = jwtSettings.Value;
-            _emailSender = emailSender;
+            _authAppService = authAppService;
         }
 
         [EnableRateLimiting("public-messaging-endpoints")]
@@ -58,30 +34,17 @@ namespace FeedApp3.Api.Controllers
         {
             try
             {
-                ApplicationUser user = new ApplicationUser
-                {
-                    UserName = request.Email,
-                    Email = request.Email
-                };
-
-                IdentityResult result = await _userManager.CreateAsync(user, request.Password);
-
-                if (!result.Succeeded)
-                {
-                    if (result.Errors.Where(e => e.Code.StartsWith("Password")).Any())
-                    {
-                        return Problem400("Password does not meet requirements.", ResponseErrorCodes.PASSWORD_DOES_NOT_MEET_REQUIREMENTS);
-                    }
-                    return Ok();
-                }
-
-                await SendEmailConfirmationEmail(user);
+                await _authAppService.RegisterAsync(request.Email, request.Password);
                 return Ok();
+            }
+            catch (AuthException ex)
+            {
+                return ProblemWithErrorCode(ex.StatusCode, ex.Message, ex.ErrorCode);
             }
             catch (Exception ex)
             {
                 _logger.LogErrorWithDictionary(AuthErrorCodes.RegisterUnexpected, ex, "Unexpected error during user registration", new Dictionary<string, string> { });
-                return Problem("An unexpected error occurred. Please try again later.");
+                return Problem500();
             }
         }
 
@@ -91,24 +54,7 @@ namespace FeedApp3.Api.Controllers
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(request.Email))
-                {
-                    return Ok();
-                }
-
-                var user = await _userManager.FindByEmailAsync(request.Email);
-                if (user == null)
-                {
-                    return Ok();
-                }
-
-                if (user.EmailConfirmed)
-                {
-                    return Ok();
-                }
-
-                await SendEmailConfirmationEmail(user);
-
+                await _authAppService.ResendConfirmationEmailAsync(request.Email);
                 return Ok();
             }
             catch (Exception ex)
@@ -118,40 +64,22 @@ namespace FeedApp3.Api.Controllers
             }
         }
 
-        private async Task SendEmailConfirmationEmail(ApplicationUser user)
-        {
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-            var confirmationUrl = $"{_clientSettings.Host}/login/confirmemail?userid={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(encodedToken)}";
-            await _emailSender.SendEmailAsync(user.Email, "Confirm your email", $"Please confirm your account by <a href='{confirmationUrl}'>clicking here</a>.");
-        }
-
         [HttpPost("confirmemail")]
         public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
         {
             try
             {
-                var user = await _userManager.FindByIdAsync(request.UserId);
-                if (user == null)
-                {
-                    return Problem400("Invalid or expired confirmation link.", ResponseErrorCodes.TOKEN_INVALID_OR_EXPIRED);
-                }
-
-                string decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
-
-                IdentityResult result = await _userManager.ConfirmEmailAsync(user, decodedToken);
-
-                if (!result.Succeeded)
-                {
-                    return Problem400("Invalid or expired confirmation link.", ResponseErrorCodes.TOKEN_INVALID_OR_EXPIRED);
-                }
-
+                await _authAppService.ConfirmEmailAsync(request.UserId, request.Token);
                 return Ok();
+            }
+            catch (AuthException ex)
+            {
+                return ProblemWithErrorCode(ex.StatusCode, ex.Message, ex.ErrorCode);
             }
             catch (Exception ex)
             {
                 _logger.LogErrorWithDictionary(AuthErrorCodes.ConfirmEmailUnexpected, ex, "Unexpected error while confirming email", new Dictionary<string, string> { });
-                return Problem("An unexpected error occurred. Please try again later.");
+                return Problem500();
             }
         }
 
@@ -160,53 +88,17 @@ namespace FeedApp3.Api.Controllers
         {
             try
             {
-                var user = await _userManager.FindByEmailAsync(request.Email);
-                if (user == null)
-                {
-                    return Problem401("Invalid credentials", ResponseErrorCodes.INVALID_CREDENTIALS);
-                }
-
-                var result = await _signInManager.CheckPasswordSignInAsync(
-                    user,
-                    request.Password,
-                    lockoutOnFailure: true);
-
-                if (!result.Succeeded)
-                {
-                    if (result.IsLockedOut)
-                    {
-                        var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
-                        var minutesRemaining = (int)(lockoutEnd.Value - DateTimeOffset.UtcNow).TotalMinutes;
-                        return Problem401($"Account is locked. Please try again in {minutesRemaining} minutes.", ResponseErrorCodes.ACCOUNT_LOCKED);
-                    }
-                    return Problem401("Invalid credentials", ResponseErrorCodes.INVALID_CREDENTIALS);
-                }
-
-                var refreshTokenString = GenerateRefreshToken();
-                await _authDbService.AddRefreshTokenAsync(new RefreshToken
-                {
-                    TokenHash = TokenHashHelper.Hash(refreshTokenString),
-                    UserId = user.Id,
-                    ExpiresAt = DateTime.UtcNow.AddDays(30),
-                    CreatedAt = DateTime.UtcNow
-                });
-
-                var accessToken = GenerateJwtToken(user);
-
-                return Ok(new AuthResponse
-                {
-                    AccessToken = accessToken,
-                    RefreshToken = refreshTokenString,
-                    UserId = user.Id,
-                    Email = user.Email,
-                    AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpireMinutes),
-                    RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(30)
-                });
+                AuthResponse authResponse = await _authAppService.LoginAsync(request.Email, request.Password);
+                return Ok(authResponse);
+            }
+            catch (AuthException ex)
+            {
+                return ProblemWithErrorCode(ex.StatusCode, ex.Message, ex.ErrorCode);
             }
             catch (Exception ex)
             {
                 _logger.LogErrorWithDictionary(AuthErrorCodes.LoginUnexpected, ex, "Unexpected error during user login", new Dictionary<string, string> { });
-                return Problem("An unexpected error occurred. Please try again later.");
+                return Problem500();
             }
         }
 
@@ -216,17 +108,7 @@ namespace FeedApp3.Api.Controllers
         {
             try
             {
-                var user = await _userManager.FindByEmailAsync(request.Email);
-                if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
-                {
-                    return Ok();
-                }
-
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-                var resetUrl = $"{_clientSettings.Host}/login/resetpassword?email={Uri.EscapeDataString(request.Email)}&token={Uri.EscapeDataString(encodedToken)}";
-                await _emailSender.SendEmailAsync(request.Email, "Reset your password", $"Reset your password by <a href='{resetUrl}'>clicking here</a>");
-
+                await _authAppService.ForgotPasswordAsync(request.Email);
                 return Ok();
             }
             catch (Exception ex)
@@ -241,31 +123,17 @@ namespace FeedApp3.Api.Controllers
         {
             try
             {
-                var user = await _userManager.FindByEmailAsync(request.Email);
-                if (user == null)
-                {
-                    return Problem400("Invalid or expired reset link.", ResponseErrorCodes.TOKEN_INVALID_OR_EXPIRED);
-                }
-
-                var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.ResetCode));
-
-                var result = await _userManager.ResetPasswordAsync(user, decodedToken, request.NewPassword);
-                if (!result.Succeeded)
-                {
-                    if (result.Errors.Where(e => e.Code.StartsWith("Password")).Any())
-                    {
-                        return Problem400("Password does not meet requirements.", ResponseErrorCodes.PASSWORD_DOES_NOT_MEET_REQUIREMENTS);
-                    }
-
-                    return Problem400("Invalid or expired reset link.", ResponseErrorCodes.TOKEN_INVALID_OR_EXPIRED);
-                }
-
+                await _authAppService.ResetPasswordAsync(request.Email, request.ResetCode, request.NewPassword);
                 return Ok();
+            }
+            catch (AuthException ex)
+            {
+                return ProblemWithErrorCode(ex.StatusCode, ex.Message, ex.ErrorCode);
             }
             catch (Exception ex)
             {
                 _logger.LogErrorWithDictionary(AuthErrorCodes.ResetPasswordUnexpected, ex, "Unexpected error while resetting password", new Dictionary<string, string> { });
-                return Problem("An unexpected error occurred. Please try again later.");
+                return Problem500();
             }
         }
 
@@ -277,34 +145,13 @@ namespace FeedApp3.Api.Controllers
 
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null)
-                {
-                    return Problem401("Authentication is no longer valid.", ResponseErrorCodes.AUTH_NO_LONGER_VALID);
-                }
-
-                userId = user.Id;
-
-                IdentityResult result = await _userManager.ChangePasswordAsync(user, request.ExistingPassword, request.NewPassword);
-                if (!result.Succeeded)
-                {
-                    if (result.Errors.Any(e => e.Code == "PasswordMismatch"))
-                    {
-                        return Problem400("Invalid credentials", ResponseErrorCodes.INVALID_CREDENTIALS);
-                    }
-
-                    if (result.Errors.Where(e => e.Code.StartsWith("Password")).Any())
-                    {
-                        return Problem400("New password does not meet requirements.", ResponseErrorCodes.PASSWORD_DOES_NOT_MEET_REQUIREMENTS);
-                    }
-
-                    _logger.LogErrorWithDictionary(AuthErrorCodes.ChangePasswordFailed, null, "Change password failed unexpectedly", new Dictionary<string, string> {
-                        { "Description", string.Join(", ", result.Errors.Select(e => e.Description)) }
-                    });
-                    return Problem("Change password failed unexpectedly. Please try again later.");
-                }
-
+                userId = User.GetUserId().ToString();
+                await _authAppService.ChangePasswordAsync(userId, request.ExistingPassword, request.NewPassword);
                 return Ok();
+            }
+            catch (AuthException ex)
+            {
+                return ProblemWithErrorCode(ex.StatusCode, ex.Message, ex.ErrorCode);
             }
             catch (Exception ex)
             {
@@ -312,7 +159,7 @@ namespace FeedApp3.Api.Controllers
                 {
                     { "UserId", userId }
                 });
-                return Problem("An unexpected error occurred. Please try again later.");
+                return Problem500();
             }
         }
 
@@ -324,32 +171,13 @@ namespace FeedApp3.Api.Controllers
 
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null)
-                {
-                    return Problem401("Authentication is no longer valid.", ResponseErrorCodes.AUTH_NO_LONGER_VALID);
-                }
-
-                userId = user.Id;
-
-                var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
-                if (!passwordValid)
-                {
-                    return Problem400("Invalid credentials", ResponseErrorCodes.INVALID_CREDENTIALS);
-                }
-
-                var existingUser = await _userManager.FindByEmailAsync(request.NewEmail);
-                if (existingUser != null)
-                {
-                    return Problem400("Email address is already in use.", ResponseErrorCodes.EMAIL_ADDRESS_ALREADY_IN_USE);
-                }
-
-                string token = await _userManager.GenerateChangeEmailTokenAsync(user, request.NewEmail);
-                var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-                var confirmationUrl = $"{_clientSettings.Host}/login/confirmemailchange?userid={Uri.EscapeDataString(user.Id)}&email={Uri.EscapeDataString(request.NewEmail)}&token={Uri.EscapeDataString(encodedToken)}";
-                await _emailSender.SendEmailAsync(request.NewEmail, "Confirm your new email", $"Please confirm your new email by <a href='{confirmationUrl}'>clicking here</a>.");
-
+                userId = User.GetUserId().ToString();
+                await _authAppService.ChangeEmailAsync(userId, request.NewEmail, request.Password);
                 return Ok();
+            }
+            catch (AuthException ex)
+            {
+                return ProblemWithErrorCode(ex.StatusCode, ex.Message, ex.ErrorCode);
             }
             catch (Exception ex)
             {
@@ -357,7 +185,7 @@ namespace FeedApp3.Api.Controllers
                 {
                     { "UserId", userId }
                 });
-                return Problem("An unexpected error occurred. Please try again later.");
+                return Problem500();
             }
         }
 
@@ -368,23 +196,13 @@ namespace FeedApp3.Api.Controllers
 
             try
             {
-                var user = await _userManager.FindByIdAsync(request.UserId);
-                if (user == null)
-                {
-                    return Problem401("Authentication is no longer valid.", ResponseErrorCodes.AUTH_NO_LONGER_VALID);
-                }
-
-                userId = user.Id;
-
-                string decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
-
-                var result = await _userManager.ChangeEmailAsync(user, request.NewEmail, decodedToken);
-                if (!result.Succeeded)
-                {
-                    return Problem400("Invalid or expired change email link.", ResponseErrorCodes.TOKEN_INVALID_OR_EXPIRED);
-                }
-
+                userId = User.GetUserId().ToString();
+                await _authAppService.ChangeEmailConfirmationAsync(userId, request.NewEmail, request.Token);
                 return Ok();
+            }
+            catch (AuthException ex)
+            {
+                return ProblemWithErrorCode(ex.StatusCode, ex.Message, ex.ErrorCode);
             }
             catch (Exception ex)
             {
@@ -392,63 +210,27 @@ namespace FeedApp3.Api.Controllers
                 {
                     { "UserId", userId }
                 });
-                return Problem("An unexpected error occurred. Please try again later.");
+                return Problem500();
             }
         }
 
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken()
         {
-            string userId = string.Empty;
-
             try
             {
                 var refreshTokenString = Request.Cookies["refresh_token"];
-                if (string.IsNullOrWhiteSpace(refreshTokenString))
-                {
-                    return Problem401("Authentication is no longer valid.", ResponseErrorCodes.AUTH_NO_LONGER_VALID);
-                }
-
-                RefreshToken? refreshToken = await _authDbService.GetRefreshTokenAsync(TokenHashHelper.Hash(refreshTokenString));
-                if (refreshToken == null)
-                {
-                    return Problem401("Authentication is no longer valid.", ResponseErrorCodes.AUTH_NO_LONGER_VALID);
-                }
-
-                userId = refreshToken.UserId;
-                var user = await _userManager.FindByIdAsync(userId);
-                if (user == null)
-                {
-                    return Problem401("Authentication is no longer valid.", ResponseErrorCodes.AUTH_NO_LONGER_VALID);
-                }
-
-                var newRefreshTokenString = GenerateRefreshToken();
-                await _authDbService.AddRefreshTokenAsync(new RefreshToken
-                {
-                    TokenHash = TokenHashHelper.Hash(newRefreshTokenString),
-                    UserId = user.Id,
-                    ExpiresAt = DateTime.UtcNow.AddDays(30),
-                    CreatedAt = DateTime.UtcNow
-                });
-                await _authDbService.RevokeRefreshTokenAsync(TokenHashHelper.Hash(refreshTokenString));
-
-                var accessToken = GenerateJwtToken(user);
-
-                return Ok(new AuthResponse
-                {
-                    AccessToken = accessToken,
-                    RefreshToken = newRefreshTokenString,
-                    AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpireMinutes),
-                    RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(30)
-                });
+                AuthResponse authResponse = await _authAppService.RefreshTokenAsync(refreshTokenString);
+                return Ok(authResponse);
+            }
+            catch (AuthException ex)
+            {
+                return ProblemWithErrorCode(ex.StatusCode, ex.Message, ex.ErrorCode);
             }
             catch (Exception ex)
             {
-                _logger.LogErrorWithDictionary(AuthErrorCodes.RefreshTokenUnexpected, ex, "Unexpected error while refreshing token", new Dictionary<string, string>
-                {
-                    { "UserId", userId }
-                });
-                return Problem("An unexpected error occurred. Please try again later.");
+                _logger.LogErrorWithDictionary(AuthErrorCodes.RefreshTokenUnexpected, ex, "Unexpected error while refreshing token", new Dictionary<string, string>{});
+                return Problem500();
             }
         }
 
@@ -459,19 +241,13 @@ namespace FeedApp3.Api.Controllers
             try
             {
                 var refreshTokenString = Request.Cookies["refresh_token"];
-                if (string.IsNullOrWhiteSpace(refreshTokenString))
-                {
-                    return Ok();
-                }
-
-                await _authDbService.RevokeRefreshTokenAsync(TokenHashHelper.Hash(refreshTokenString));
-
+                await _authAppService.LogoutAsync(refreshTokenString);
                 return Ok();
             }
             catch (Exception ex)
             {
                 _logger.LogErrorWithDictionary(AuthErrorCodes.LogoutUnexpected, ex, "Unexpected error while signing out", new Dictionary<string, string> { });
-                return Problem("An unexpected error occurred. Please try again later.");
+                return Problem500();
             }
         }
 
@@ -483,35 +259,13 @@ namespace FeedApp3.Api.Controllers
 
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null)
-                {
-                    return Problem401("Authentication is no longer valid.", ResponseErrorCodes.AUTH_NO_LONGER_VALID);
-                }
-
-                userId = user.Id;
-
-                var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
-                if (!passwordValid)
-                {
-                    return Problem400("Invalid credentials", ResponseErrorCodes.INVALID_CREDENTIALS);
-                }
-
-                user.IsDeleted = true;
-                user.DeletedAt = DateTime.UtcNow;
-                
-                var result = await _userManager.UpdateAsync(user);
-                if (!result.Succeeded)
-                {
-                    _logger.LogErrorWithDictionary(AuthErrorCodes.DeleteAccountFailed, null, "Delete account failed unexpectedly", new Dictionary<string, string> {
-                        { "Description", string.Join(", ", result.Errors.Select(e => e.Description)) }
-                    });
-                    return Problem("Delete account failed unexpectedly. Please try again later.");
-                }
-
-                await _authDbService.RevokeAllUserRefreshTokensAsync(userId);
-
+                userId = User.GetUserId().ToString();
+                await _authAppService.DeleteAccountAsync(userId, request.Password);
                 return Ok();
+            }
+            catch (AuthException ex)
+            {
+                return ProblemWithErrorCode(ex.StatusCode, ex.Message, ex.ErrorCode);
             }
             catch (Exception ex)
             {
@@ -519,39 +273,8 @@ namespace FeedApp3.Api.Controllers
                 {
                     { "UserId", userId }
                 });
-                return Problem("An unexpected error occurred. Please try again later.");
+                return Problem500();
             }
-        }
-
-        private string GenerateJwtToken(ApplicationUser user)
-        {
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Email, user.Email)
-            };
-
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_jwtSettings.Key));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.ExpireMinutes),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
-        private string GenerateRefreshToken()
-        {
-            var randomBytes = new byte[64];
-            using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(randomBytes);
-            return Convert.ToBase64String(randomBytes);
         }
 
     }

@@ -5,13 +5,8 @@ namespace FeedApp3.Api.Helpers
 {
     public static class FeedMapper
     {
-        public static FeedDto? ToDto(Feed? f)
+        public static FeedDto ToDto(Feed f)
         {
-            if (f == null)
-            {
-                return null;
-            }
-
             return new FeedDto()
             {
                 FeedId = f.FeedId,
@@ -37,13 +32,8 @@ namespace FeedApp3.Api.Helpers
             };
         }
 
-        public static Feed? ToEntity(FeedDto f)
+        public static Feed ToEntity(FeedDto f)
         {
-            if (f == null)
-            {
-                return null;
-            }
-
             return new Feed()
             {
                 FeedId = f.FeedId,

@@ -8,17 +8,17 @@ namespace FeedApp3.Api.Controllers
     [Route("[controller]")]
     public class LogsController : ControllerBase
     {
-        private readonly LoggingDbService _loggingDbService;
+        private readonly ErrorLogQueue _errorLogQueue;
 
-        public LogsController(LoggingDbService loggingDbService)
+        public LogsController(ErrorLogQueue errorLogQueue)
         {
-            _loggingDbService = loggingDbService;
+            _errorLogQueue = errorLogQueue;
         }
 
         [HttpPost("logerror")]
         public async Task<IActionResult> LogError([FromBody] Error error)
         {
-            _loggingDbService.LogError(error);
+            _errorLogQueue.Enqueue(error);
             return Ok();
         }
     }
