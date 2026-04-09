@@ -1,12 +1,11 @@
-using FeedApp3.Shared.Data;
+using FeedApp3.Shared.Errors;
 using FeedApp3.Shared.Services.DTOs;
-using FeedApp3.Web.Helpers;
+using FeedApp3.Web.Data;
 using FeedApp3.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using FeedApp3.Shared.Helpers;
 
 namespace FeedApp3.Web.Controllers
 {
@@ -118,7 +117,10 @@ namespace FeedApp3.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogErrorWithDictionary(WebErrorCodes.ControllerUnexpected, ex, "Unexpected error while logging out");
+                _logger.LogError(
+                    ex,
+                    "Unexpected error while logging out. ErrorCode: {ErrorCode}",
+                    ApiErrorCodes.INTERNAL_SERVER_ERROR);
             }
 
             return RedirectToAction("Login", "Login", new { message = message });

@@ -1,4 +1,5 @@
-﻿using Shared.Helpers;
+﻿using FeedApp3.Shared.Errors;
+using Shared.Exceptions;
 using Shared.Services.Responses;
 using System.Net;
 using System.Net.Http.Json;
@@ -69,34 +70,35 @@ namespace FeedApp3.Shared.Helpers
             if (response.StatusCode >= HttpStatusCode.BadRequest &&
                 response.StatusCode <= (HttpStatusCode)499)
             {
-                ProblemResponse? problemResponse = null;
+                ApiErrorResponse? apiErrorResponse = null;
                 try
                 {
-                    problemResponse = response.Content.ReadFromJsonAsync<ProblemResponse>().Result;
+                    apiErrorResponse = response.Content.ReadFromJsonAsync<ApiErrorResponse>().Result;
                 }
                 catch { }
 
-                if (!string.IsNullOrWhiteSpace(problemResponse?.ErrorCode) && RecoverableErrorCodes.Any(e=> e.ToString() == problemResponse.ErrorCode) && !string.IsNullOrWhiteSpace(problemResponse?.Detail))
+                if (!string.IsNullOrWhiteSpace(apiErrorResponse?.ErrorCode) && RecoverableErrorCodes.Any(e=> e.ToString() == apiErrorResponse.ErrorCode) && !string.IsNullOrWhiteSpace(apiErrorResponse?.Detail))
                 {
-                    bool isUnauthorized = ResponseErrorCodes.UNAUTHORIZED.ToString() == problemResponse.ErrorCode;
-                    throw new HttpRecoverableError(problemResponse.Detail, response.StatusCode, isUnauthorized);
+                    bool isUnauthorized = ApiErrorCodes.UNAUTHORIZED.ToString() == apiErrorResponse.ErrorCode;
+                    throw new HttpRecoverableError(apiErrorResponse.Detail, response.StatusCode, isUnauthorized);
                 }
             }
             //check for unrecoverable error
             response.EnsureSuccessStatusCode();
         }
 
-        private List<ResponseErrorCodes> RecoverableErrorCodes { get; } = new ()
+        private List<string> RecoverableErrorCodes { get; } = new ()
         {
-            ResponseErrorCodes.INVALID_CREDENTIALS,
-            ResponseErrorCodes.INVALID_REQUEST_PARAMETERS,
-            ResponseErrorCodes.TOKEN_INVALID_OR_EXPIRED,
-            ResponseErrorCodes.PASSWORD_DOES_NOT_MEET_REQUIREMENTS,
-            ResponseErrorCodes.EMAIL_ADDRESS_ALREADY_IN_USE,
-            ResponseErrorCodes.ACCOUNT_LOCKED,
-            ResponseErrorCodes.AUTH_NO_LONGER_VALID,
-            ResponseErrorCodes.UNAUTHORIZED,
-            ResponseErrorCodes.FORBIDDEN
+            ApiErrorCodes.INVALID_CREDENTIALS,
+            ApiErrorCodes.INVALID_REQUEST_PARAMETERS,
+            ApiErrorCodes.TOKEN_INVALID_OR_EXPIRED,
+            ApiErrorCodes.PASSWORD_DOES_NOT_MEET_REQUIREMENTS,
+            ApiErrorCodes.EMAIL_ADDRESS_ALREADY_IN_USE,
+            ApiErrorCodes.ACCOUNT_LOCKED,
+            ApiErrorCodes.AUTH_NO_LONGER_VALID,
+            ApiErrorCodes.UNAUTHORIZED,
+            ApiErrorCodes.FORBIDDEN,
+            ApiErrorCodes.TOOMANYREQUESTS
         };
 
     }

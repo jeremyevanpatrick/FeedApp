@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace FeedApp3.Shared.Helpers
+namespace Shared.Exceptions
 {
     public class HttpRecoverableError : Exception
     {

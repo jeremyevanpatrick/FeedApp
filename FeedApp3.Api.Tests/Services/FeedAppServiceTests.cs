@@ -6,6 +6,7 @@ using FeedApp3.Api.Services.External;
 using FeedApp3.Shared.Services.DTOs;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace FeedApp3.Api.Tests.Services
@@ -42,7 +43,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRepo.Setup(r => r.GetListByUserIdAsync(It.IsAny<Guid>()))
                     .ReturnsAsync(feeds);
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             var result = await service.GetFeedListAsync(Guid.NewGuid());
@@ -65,7 +66,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRepo.Setup(r => r.GetListByUserIdAsync(It.IsAny<Guid>()))
                     .ReturnsAsync(new List<Feed>());
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             var result = await service.GetFeedListAsync(Guid.NewGuid());
@@ -103,7 +104,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRepo.Setup(r => r.GetByFeedIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                     .ReturnsAsync(feed);
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             var result = await service.GetFeedByIdAsync(Guid.NewGuid(), Guid.NewGuid());
@@ -123,7 +124,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRepo.Setup(r => r.GetByFeedIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                     .ReturnsAsync((Feed?)null);
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             Func<Task> result = () => service.GetFeedByIdAsync(Guid.NewGuid(), Guid.NewGuid());
@@ -164,7 +165,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRssClient.Setup(r => r.ImportFeedFromUrl(It.IsAny<string>()))
                     .ReturnsAsync(feedDto);
 
-            var service = new FeedAppService(mockRepo.Object, mockRssClient.Object);
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, mockRssClient.Object);
 
             // Act
             await service.CreateAsync(userId, feedUrl);
@@ -189,7 +190,7 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockRssClient = new Mock<IRssClient>();
 
-            var service = new FeedAppService(mockRepo.Object, mockRssClient.Object);
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, mockRssClient.Object);
 
             // Act
             await service.CreateAsync(userId, feedUrl);
@@ -214,7 +215,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRssClient.Setup(r => r.ImportFeedFromUrl(It.IsAny<string>()))
                  .ThrowsAsync(new Exception("Test error"));
 
-            var service = new FeedAppService(mockRepo.Object, mockRssClient.Object);
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, mockRssClient.Object);
 
             // Act
             Func<Task> result = () => service.CreateAsync(userId, feedUrl);
@@ -293,7 +294,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRssClient.Setup(r => r.ImportFeedFromUrl(It.IsAny<string>(), It.IsAny<DateTime>()))
                     .ReturnsAsync(latestFeed);
 
-            var service = new FeedAppService(mockRepo.Object, mockRssClient.Object);
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, mockRssClient.Object);
 
             // Act
             await service.UpdateAsync(userId, feedId);
@@ -320,7 +321,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRepo.Setup(r => r.GetByFeedIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                     .ReturnsAsync((Feed?)null);
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             Func<Task> result = () => service.UpdateAsync(userId, feedId);
@@ -348,7 +349,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRssClient.Setup(r => r.ImportFeedFromUrl(It.IsAny<string>()))
                  .ThrowsAsync(new Exception("Test error"));
 
-            var service = new FeedAppService(mockRepo.Object, mockRssClient.Object);
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, mockRssClient.Object);
 
             // Act
             Func<Task> result = () => service.UpdateAsync(Guid.NewGuid(), Guid.NewGuid());
@@ -374,7 +375,7 @@ namespace FeedApp3.Api.Tests.Services
                 .Callback<Feed>(f => deletedFeed = f)
                 .Returns(Task.CompletedTask);
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             await service.DeleteAsync(Guid.NewGuid(), Guid.NewGuid());
@@ -392,7 +393,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRepo.Setup(r => r.GetByFeedIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                     .ReturnsAsync((Feed?)null);
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             Func<Task> result = () => service.DeleteAsync(Guid.NewGuid(), Guid.NewGuid());
@@ -426,7 +427,7 @@ namespace FeedApp3.Api.Tests.Services
                 .Callback<Feed>(f => updatedFeed = f)
                 .Returns(Task.CompletedTask);
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             await service.MarkFeedAsReadAsync(Guid.NewGuid(), Guid.NewGuid());
@@ -446,7 +447,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRepo.Setup(r => r.GetByFeedIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .ReturnsAsync((Feed?)null);
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             Func<Task> result = () => service.MarkFeedAsReadAsync(Guid.NewGuid(), Guid.NewGuid());
@@ -472,7 +473,7 @@ namespace FeedApp3.Api.Tests.Services
                 .Callback<Article>(a => updatedArticle = a)
                 .Returns(Task.CompletedTask);
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             await service.MarkArticleAsReadAsync(Guid.NewGuid(), Guid.NewGuid());
@@ -491,7 +492,7 @@ namespace FeedApp3.Api.Tests.Services
             mockRepo.Setup(r => r.GetByArticleIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .ReturnsAsync((Article?)null);
 
-            var service = new FeedAppService(mockRepo.Object, Mock.Of<IRssClient>());
+            var service = new FeedAppService(Mock.Of<ILogger<FeedAppService>>(), mockRepo.Object, Mock.Of<IRssClient>());
 
             // Act
             Func<Task> result = () => service.MarkArticleAsReadAsync(Guid.NewGuid(), Guid.NewGuid());

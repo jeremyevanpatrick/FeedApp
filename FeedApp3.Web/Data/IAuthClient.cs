@@ -1,6 +1,6 @@
 ﻿using FeedApp3.Shared.Services.Responses;
 
-namespace FeedApp3.Shared.Data
+namespace FeedApp3.Web.Data
 {
     public interface IAuthClient
     {

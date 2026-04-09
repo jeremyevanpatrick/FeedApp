@@ -5,142 +5,170 @@ using FeedApp3.Api.Models;
 using FeedApp3.Api.Services.External;
 using FeedApp3.Shared.Services.DTOs;
 using Microsoft.EntityFrameworkCore;
+using FeedApp3.Shared.Extensions;
 
 namespace FeedApp3.Api.Services.Application
 {
     public class FeedAppService : IFeedAppService
     {
+        private readonly ILogger<FeedAppService> _logger;
         private readonly IFeedRepository _feedRepository;
         private readonly IRssClient _rssClient;
 
         public FeedAppService(
+            ILogger<FeedAppService> logger,
             IFeedRepository feedRepository,
             IRssClient rssClient)
         {
+            _logger = logger;
             _feedRepository = feedRepository;
             _rssClient = rssClient;
         }
 
         public async Task<List<FeedDto>> GetFeedListAsync(Guid userId)
         {
-            List<Feed> feeds = await _feedRepository.GetListByUserIdAsync(userId);
-            List<FeedDto> feedDtos = feeds.Select(f => {
-                f.UnreadArticleCount = f.Articles.Count(a => a.IsUnread);
-                return FeedMapper.ToDto(f);
-            })
-            .OrderByDescending(f => f.UnreadArticleCount)
-            .ToList();
-
-            await _feedRepository.CreateFeedUpdateAsync(new FeedUpdate
+            using (_logger.BeginLoggingScope(nameof(FeedAppService), nameof(GetFeedListAsync)))
             {
-                UserId = userId,
-                RequestedAt = DateTime.UtcNow
-            });
+                List<Feed> feeds = await _feedRepository.GetListByUserIdAsync(userId);
+                List<FeedDto> feedDtos = feeds.Select(f =>
+                {
+                    f.UnreadArticleCount = f.Articles.Count(a => a.IsUnread);
+                    return FeedMapper.ToDto(f);
+                })
+                .OrderByDescending(f => f.UnreadArticleCount)
+                .ToList();
 
-            return feedDtos;
+                await _feedRepository.CreateFeedUpdateAsync(new FeedUpdate
+                {
+                    UserId = userId,
+                    RequestedAt = DateTime.UtcNow
+                });
+
+                return feedDtos;
+            }
         }
 
         public async Task<FeedDto> GetFeedByIdAsync(Guid userId, Guid feedId)
         {
-            Feed? feed = await _feedRepository.GetByFeedIdAsync(userId, feedId);
-            if (feed == null)
+            using (_logger.BeginLoggingScope(nameof(FeedAppService), nameof(GetFeedByIdAsync)))
             {
-                throw new NotFoundException("feedId");
+                Feed? feed = await _feedRepository.GetByFeedIdAsync(userId, feedId);
+                if (feed == null)
+                {
+                    throw new NotFoundException("feedId");
+                }
+
+                feed.Articles = feed.Articles.OrderByDescending(a => a.ArticleDate).ToList();
+                feed.UnreadArticleCount = feed.Articles.Count(f => f.IsUnread);
+
+                return FeedMapper.ToDto(feed);
             }
-
-            feed.Articles = feed.Articles.OrderByDescending(a => a.ArticleDate).ToList();
-            feed.UnreadArticleCount = feed.Articles.Count(f => f.IsUnread);
-
-            return FeedMapper.ToDto(feed);
         }
 
         public async Task CreateAsync(Guid userId, string feedUrl)
         {
-            bool isDuplicateUrl = await _feedRepository.IsDuplicateFeedUrlAsync(userId, feedUrl);
-            if (isDuplicateUrl)
+            using (_logger.BeginLoggingScope(nameof(FeedAppService), nameof(CreateAsync)))
             {
-                return;
-            }
+                bool isDuplicateUrl = await _feedRepository.IsDuplicateFeedUrlAsync(userId, feedUrl);
+                if (isDuplicateUrl)
+                {
+                    return;
+                }
 
-            FeedDto? feedDto = null;
+                FeedDto? feedDto = null;
 
-            try
-            {
-                feedDto = await _rssClient.ImportFeedFromUrl(feedUrl);
-            }
-            catch (Exception ex)
-            {
-                throw new NotFoundException("feed url");
-            }
+                try
+                {
+                    feedDto = await _rssClient.ImportFeedFromUrl(feedUrl);
+                }
+                catch (Exception ex)
+                {
+                    throw new NotFoundException("feed url");
+                }
 
-            Feed feed = FeedMapper.ToEntity(feedDto);
-            feed.UserId = userId;
-            await _feedRepository.CreateAsync(feed);
+                Feed feed = FeedMapper.ToEntity(feedDto);
+                feed.UserId = userId;
+                await _feedRepository.CreateAsync(feed);
+            }
         }
 
         public async Task UpdateAsync(Guid userId, Guid feedId)
         {
-            Feed? existingFeed = await _feedRepository.GetByFeedIdAsync(userId, feedId);
-            if (existingFeed == null)
+            using (_logger.BeginLoggingScope(nameof(FeedAppService), nameof(UpdateAsync)))
             {
-                throw new NotFoundException("feedId");
+                Feed? existingFeed = await _feedRepository.GetByFeedIdAsync(userId, feedId);
+                if (existingFeed == null)
+                {
+                    throw new NotFoundException("feedId");
+                }
+
+                //Get latest feed from URL
+                FeedDto latestFeedDto = await _rssClient.ImportFeedFromUrl(existingFeed.FeedUrl, existingFeed.LastModified);
+                Feed latestFeed = FeedMapper.ToEntity(latestFeedDto);
+
+                if (latestFeed.Articles.Any())
+                {
+                    List<Article> articlesToAdd = latestFeed.Articles.Where(l => !existingFeed.Articles.Any(e => e.ArticleUrl == l.ArticleUrl)).ToList();
+                    
+                    articlesToAdd.ForEach(a => a.FeedId = feedId);
+                    
+                    await _feedRepository.CreateArticlesAsync(articlesToAdd);
+
+                    existingFeed.LastModified = latestFeed.LastModified;
+                }
+                existingFeed.LastChecked = latestFeed.LastChecked;
+
+                await _feedRepository.UpdateAsync(existingFeed);
             }
-
-            //Get latest feed from URL
-            FeedDto latestFeedDto = await _rssClient.ImportFeedFromUrl(existingFeed.FeedUrl, existingFeed.LastModified);
-            Feed latestFeed = FeedMapper.ToEntity(latestFeedDto);
-
-            if (latestFeed.Articles.Any())
-            {
-                List<Article> articlesToAdd = latestFeed.Articles.Where(l => !existingFeed.Articles.Any(e => e.ArticleUrl == l.ArticleUrl)).ToList();
-                //TODO: verify this still works
-                await _feedRepository.CreateArticlesAsync(articlesToAdd);
-
-                existingFeed.LastModified = latestFeed.LastModified;
-            }
-            existingFeed.LastChecked = latestFeed.LastChecked;
-
-            await _feedRepository.UpdateAsync(existingFeed);
         }
 
         public async Task DeleteAsync(Guid userId, Guid feedId)
         {
-            Feed? existingFeed = await _feedRepository.GetByFeedIdAsync(userId, feedId);
-            if (existingFeed == null)
+            using (_logger.BeginLoggingScope(nameof(FeedAppService), nameof(DeleteAsync)))
             {
-                throw new NotFoundException("feedId");
-            }
+                Feed? existingFeed = await _feedRepository.GetByFeedIdAsync(userId, feedId);
+                if (existingFeed == null)
+                {
+                    throw new NotFoundException("feedId");
+                }
 
-            await _feedRepository.DeleteAsync(existingFeed);
+                await _feedRepository.DeleteAsync(existingFeed);
+            }
         }
 
         public async Task MarkFeedAsReadAsync(Guid userId, Guid feedId)
         {
-            Feed? existingFeed = await _feedRepository.GetByFeedIdAsync(userId, feedId);
-            if (existingFeed == null)
+            using (_logger.BeginLoggingScope(nameof(FeedAppService), nameof(MarkFeedAsReadAsync)))
             {
-                throw new NotFoundException("feedId");
-            }
+                Feed? existingFeed = await _feedRepository.GetByFeedIdAsync(userId, feedId);
+                if (existingFeed == null)
+                {
+                    throw new NotFoundException("feedId");
+                }
 
-            foreach (Article article in existingFeed.Articles)
-            {
-                article.IsUnread = false;
-            }
+                foreach (Article article in existingFeed.Articles)
+                {
+                    article.IsUnread = false;
+                }
 
-            await _feedRepository.UpdateAsync(existingFeed);
+                await _feedRepository.UpdateAsync(existingFeed);
+            }
         }
 
         public async Task MarkArticleAsReadAsync(Guid userId, Guid articleId)
         {
-            Article? existingArticle = await _feedRepository.GetByArticleIdAsync(userId, articleId);
-            if (existingArticle == null)
+            using (_logger.BeginLoggingScope(nameof(FeedAppService), nameof(MarkArticleAsReadAsync)))
             {
-                throw new NotFoundException("articleId");
+                Article? existingArticle = await _feedRepository.GetByArticleIdAsync(userId, articleId);
+                if (existingArticle == null)
+                {
+                    throw new NotFoundException("articleId");
+                }
+
+                existingArticle.IsUnread = false;
+
+                await _feedRepository.UpdateArticleAsync(existingArticle);
             }
-
-            existingArticle.IsUnread = false;
-
-            await _feedRepository.UpdateArticleAsync(existingArticle);
         }
 
     }

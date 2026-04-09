@@ -1,6 +1,7 @@
 ﻿using FeedApp3.Api.Controllers;
 using FeedApp3.Api.Exceptions;
 using FeedApp3.Api.Services.Application;
+using FeedApp3.Shared.Errors;
 using FeedApp3.Shared.Services.Requests;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -8,13 +9,27 @@ using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Shared.Helpers;
+using Shared.Services.Responses;
 using System.Security.Claims;
 
 namespace FeedApp3.Api.Tests.Controllers
 {
     public class AuthControllerTests
     {
+        private static AuthController CreateController(Mock<IAuthAppService> mockService)
+        {
+            var controller = new AuthController(
+                Mock.Of<ILogger<AuthController>>(),
+                mockService.Object);
+
+            controller.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext()
+            };
+
+            return controller;
+        }
+
         private static AuthController CreateControllerWithUser(Guid userId, Mock<IAuthAppService> mockService)
         {
             var controller = new AuthController(
@@ -40,7 +55,7 @@ namespace FeedApp3.Api.Tests.Controllers
             //Arrange
             var mockService = new Mock<IAuthAppService>();
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new RegisterRequest { Email = "test", Password = "test" };
@@ -58,9 +73,9 @@ namespace FeedApp3.Api.Tests.Controllers
 
             mockService
                 .Setup(s => s.RegisterAsync(It.IsAny<string>(), It.IsAny<string>()))
-                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ResponseErrorCodes.PASSWORD_DOES_NOT_MEET_REQUIREMENTS));
+                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ApiErrorCodes.PASSWORD_DOES_NOT_MEET_REQUIREMENTS));
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new RegisterRequest { Email = "test", Password = "test" };
@@ -70,8 +85,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.PASSWORD_DOES_NOT_MEET_REQUIREMENTS.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.PASSWORD_DOES_NOT_MEET_REQUIREMENTS.ToString());
         }
 
         [Fact]
@@ -84,7 +99,7 @@ namespace FeedApp3.Api.Tests.Controllers
                 .Setup(s => s.RegisterAsync(It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new Exception("Test error"));
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new RegisterRequest { Email = "test", Password = "test" };
@@ -101,7 +116,7 @@ namespace FeedApp3.Api.Tests.Controllers
             //Arrange
             var mockService = new Mock<IAuthAppService>();
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ResendConfirmationEmailRequest { Email = "test" };
@@ -121,7 +136,7 @@ namespace FeedApp3.Api.Tests.Controllers
                 .Setup(s => s.ResendConfirmationEmailAsync(It.IsAny<string>()))
                 .ThrowsAsync(new Exception("Test error"));
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ResendConfirmationEmailRequest { Email = "test" };
@@ -137,7 +152,7 @@ namespace FeedApp3.Api.Tests.Controllers
             //Arrange
             var mockService = new Mock<IAuthAppService>();
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ConfirmEmailRequest(Guid.NewGuid().ToString(), "test");
@@ -155,9 +170,9 @@ namespace FeedApp3.Api.Tests.Controllers
 
             mockService
                 .Setup(s => s.ConfirmEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
-                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ResponseErrorCodes.TOKEN_INVALID_OR_EXPIRED));
+                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ApiErrorCodes.TOKEN_INVALID_OR_EXPIRED));
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ConfirmEmailRequest(Guid.NewGuid().ToString(), "test");
@@ -167,8 +182,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.TOKEN_INVALID_OR_EXPIRED.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.TOKEN_INVALID_OR_EXPIRED.ToString());
         }
 
         [Fact]
@@ -181,7 +196,7 @@ namespace FeedApp3.Api.Tests.Controllers
                 .Setup(s => s.ConfirmEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new Exception("Test error"));
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ConfirmEmailRequest(Guid.NewGuid().ToString(), "test");
@@ -198,7 +213,7 @@ namespace FeedApp3.Api.Tests.Controllers
             //Arrange
             var mockService = new Mock<IAuthAppService>();
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new LoginRequest { Email = "test", Password = "test" };
@@ -216,9 +231,9 @@ namespace FeedApp3.Api.Tests.Controllers
 
             mockService
                 .Setup(s => s.LoginAsync(It.IsAny<string>(), It.IsAny<string>()))
-                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ResponseErrorCodes.INVALID_CREDENTIALS));
+                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ApiErrorCodes.INVALID_CREDENTIALS));
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new LoginRequest { Email = "test", Password = "test" };
@@ -228,8 +243,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.INVALID_CREDENTIALS.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.INVALID_CREDENTIALS.ToString());
         }
 
         [Fact]
@@ -242,7 +257,7 @@ namespace FeedApp3.Api.Tests.Controllers
                 .Setup(s => s.LoginAsync(It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new Exception("Test error"));
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new LoginRequest { Email = "test", Password = "test" };
@@ -259,7 +274,7 @@ namespace FeedApp3.Api.Tests.Controllers
             //Arrange
             var mockService = new Mock<IAuthAppService>();
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ForgotPasswordRequest { Email = "test" };
@@ -279,7 +294,7 @@ namespace FeedApp3.Api.Tests.Controllers
                 .Setup(s => s.ForgotPasswordAsync(It.IsAny<string>()))
                 .ThrowsAsync(new Exception("Test error"));
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ForgotPasswordRequest { Email = "test" };
@@ -295,7 +310,7 @@ namespace FeedApp3.Api.Tests.Controllers
             //Arrange
             var mockService = new Mock<IAuthAppService>();
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ResetPasswordRequest { Email = "test", ResetCode = "test", NewPassword = "test" };
@@ -313,9 +328,9 @@ namespace FeedApp3.Api.Tests.Controllers
 
             mockService
                 .Setup(s => s.ResetPasswordAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ResponseErrorCodes.TOKEN_INVALID_OR_EXPIRED));
+                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ApiErrorCodes.TOKEN_INVALID_OR_EXPIRED));
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ResetPasswordRequest { Email = "test", ResetCode = "test", NewPassword = "test" };
@@ -325,8 +340,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.TOKEN_INVALID_OR_EXPIRED.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.TOKEN_INVALID_OR_EXPIRED.ToString());
         }
 
         [Fact]
@@ -339,7 +354,7 @@ namespace FeedApp3.Api.Tests.Controllers
                 .Setup(s => s.ResetPasswordAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new Exception("Test error"));
 
-            var controller = CreateControllerWithUser(Guid.NewGuid(), mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ResetPasswordRequest { Email = "test", ResetCode = "test", NewPassword = "test" };
@@ -376,7 +391,7 @@ namespace FeedApp3.Api.Tests.Controllers
 
             mockService
                 .Setup(s => s.ChangePasswordAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ResponseErrorCodes.AUTH_NO_LONGER_VALID));
+                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ApiErrorCodes.AUTH_NO_LONGER_VALID));
 
             var controller = CreateControllerWithUser(userId, mockService);
 
@@ -388,8 +403,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.AUTH_NO_LONGER_VALID.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.AUTH_NO_LONGER_VALID.ToString());
         }
 
         [Fact]
@@ -440,7 +455,7 @@ namespace FeedApp3.Api.Tests.Controllers
 
             mockService
                 .Setup(s => s.ChangeEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ResponseErrorCodes.AUTH_NO_LONGER_VALID));
+                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ApiErrorCodes.AUTH_NO_LONGER_VALID));
 
             var controller = CreateControllerWithUser(userId, mockService);
 
@@ -452,8 +467,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.AUTH_NO_LONGER_VALID.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.AUTH_NO_LONGER_VALID.ToString());
         }
 
         [Fact]
@@ -485,7 +500,7 @@ namespace FeedApp3.Api.Tests.Controllers
             var userId = Guid.NewGuid();
             var mockService = new Mock<IAuthAppService>();
 
-            var controller = CreateControllerWithUser(userId, mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ChangeEmailConfirmationRequest(userId.ToString(), "test", "test");
@@ -504,9 +519,9 @@ namespace FeedApp3.Api.Tests.Controllers
 
             mockService
                 .Setup(s => s.ChangeEmailConfirmationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ResponseErrorCodes.AUTH_NO_LONGER_VALID));
+                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ApiErrorCodes.AUTH_NO_LONGER_VALID));
 
-            var controller = CreateControllerWithUser(userId, mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ChangeEmailConfirmationRequest(userId.ToString(), "test", "test");
@@ -516,8 +531,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.AUTH_NO_LONGER_VALID.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.AUTH_NO_LONGER_VALID.ToString());
         }
 
         [Fact]
@@ -531,7 +546,7 @@ namespace FeedApp3.Api.Tests.Controllers
                 .Setup(s => s.ChangeEmailConfirmationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new Exception("Test error"));
 
-            var controller = CreateControllerWithUser(userId, mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var request = new ChangeEmailConfirmationRequest(userId.ToString(), "test", "test");
@@ -549,7 +564,8 @@ namespace FeedApp3.Api.Tests.Controllers
             var userId = Guid.NewGuid();
             var mockService = new Mock<IAuthAppService>();
 
-            var controller = CreateControllerWithUser(userId, mockService);
+            var controller = CreateController(mockService);
+            controller.ControllerContext.HttpContext.Request.Headers["Cookies"] = "refresh_token=test_valid_token";
 
             //Act
             var result = await controller.RefreshToken();
@@ -567,9 +583,10 @@ namespace FeedApp3.Api.Tests.Controllers
 
             mockService
                 .Setup(s => s.RefreshTokenAsync(It.IsAny<string>()))
-                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ResponseErrorCodes.AUTH_NO_LONGER_VALID));
+                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ApiErrorCodes.AUTH_NO_LONGER_VALID));
 
-            var controller = CreateControllerWithUser(userId, mockService);
+            var controller = CreateController(mockService);
+            controller.ControllerContext.HttpContext.Request.Headers["Cookies"] = "refresh_token=test_invalid_token";
 
             //Act
             var result = await controller.RefreshToken();
@@ -578,8 +595,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.AUTH_NO_LONGER_VALID.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.AUTH_NO_LONGER_VALID.ToString());
         }
 
         [Fact]
@@ -593,7 +610,7 @@ namespace FeedApp3.Api.Tests.Controllers
                 .Setup(s => s.RefreshTokenAsync(It.IsAny<string>()))
                 .ThrowsAsync(new Exception("Test error"));
 
-            var controller = CreateControllerWithUser(userId, mockService);
+            var controller = CreateController(mockService);
 
             //Act
             var result = await controller.RefreshToken();
@@ -666,7 +683,7 @@ namespace FeedApp3.Api.Tests.Controllers
 
             mockService
                 .Setup(s => s.DeleteAccountAsync(It.IsAny<string>(), It.IsAny<string>()))
-                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ResponseErrorCodes.AUTH_NO_LONGER_VALID));
+                .ThrowsAsync(new AuthException("Test error", StatusCodes.Status400BadRequest, ApiErrorCodes.AUTH_NO_LONGER_VALID));
 
             var controller = CreateControllerWithUser(userId, mockService);
 
@@ -678,8 +695,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.AUTH_NO_LONGER_VALID.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.AUTH_NO_LONGER_VALID.ToString());
         }
 
         [Fact]

@@ -1,13 +1,11 @@
-﻿using Shared.Helpers;
-
-namespace FeedApp3.Api.Exceptions
+﻿namespace FeedApp3.Api.Exceptions
 {
     public class AuthException : Exception
     {
         public int StatusCode { get; }
-        public ResponseErrorCodes ErrorCode { get; }
+        public string ErrorCode { get; }
 
-        public AuthException(string message, int statusCode, ResponseErrorCodes errorCode)
+        public AuthException(string message, int statusCode, string errorCode)
             : base(message)
         {
             StatusCode = statusCode;

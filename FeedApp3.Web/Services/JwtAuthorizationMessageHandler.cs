@@ -1,8 +1,11 @@
-﻿using FeedApp3.Shared.Helpers;
+﻿using FeedApp3.Shared.Errors;
+using FeedApp3.Shared.Helpers;
 using FeedApp3.Shared.Services.Responses;
 using FeedApp3.Web.Helpers;
 using FeedApp3.Web.Settings;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
@@ -147,7 +150,11 @@ namespace FeedApp3.Web.Services
             }
             catch(Exception ex)
             {
-                _logger.LogErrorWithDictionary(WebErrorCodes.RefreshTokenUnexpected, ex, "Unexpected error while refreshing token");
+                _logger.LogError(
+                    ex,
+                    "Unexpected error while refreshing token. ErrorCode: {ErrorCode}",
+                    ApiErrorCodes.INTERNAL_SERVER_ERROR);
+
                 httpContext.Response.Cookies.Delete("jwt_token");
                 httpContext.Response.Cookies.Delete("refresh_token");
                 return null;

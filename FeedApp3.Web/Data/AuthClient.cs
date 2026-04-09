@@ -1,5 +1,4 @@
-﻿using FeedApp3.Shared.Data;
-using FeedApp3.Shared.Helpers;
+﻿using FeedApp3.Shared.Helpers;
 using FeedApp3.Shared.Services.Requests;
 using FeedApp3.Shared.Services.Responses;
 using FeedApp3.Web.Services;

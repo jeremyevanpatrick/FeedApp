@@ -1,5 +1,5 @@
-﻿using FeedApp3.Api.Services;
-using FeedApp3.Shared.Models;
+﻿using FeedApp3.Shared.Models;
+using FeedApp3.Shared.Services.Queues;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FeedApp3.Api.Controllers
@@ -8,17 +8,30 @@ namespace FeedApp3.Api.Controllers
     [Route("[controller]")]
     public class LogsController : ControllerBase
     {
-        private readonly ErrorLogQueue _errorLogQueue;
+        private readonly ILogProcessorQueue _logProcessorQueue;
 
-        public LogsController(ErrorLogQueue errorLogQueue)
+        public LogsController(ILogProcessorQueue logProcessorQueue)
         {
-            _errorLogQueue = errorLogQueue;
+            _logProcessorQueue = logProcessorQueue;
         }
 
-        [HttpPost("logerror")]
-        public async Task<IActionResult> LogError([FromBody] Error error)
+        [HttpPost("log")]
+        public async Task<IActionResult> Log([FromBody] ApplicationLog applicationLog)
         {
-            _errorLogQueue.Enqueue(error);
+            _logProcessorQueue.Enqueue(applicationLog);
+            return Ok();
+        }
+
+        [HttpPost("logbatch")]
+        public async Task<IActionResult> LogBatch([FromBody] List<ApplicationLog> applicationLogs)
+        {
+            if (applicationLogs != null)
+            {
+                foreach (var applicationLog in applicationLogs)
+                {
+                    _logProcessorQueue.Enqueue(applicationLog);
+                }
+            }
             return Ok();
         }
     }

@@ -23,15 +23,23 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(f => f.FeedId);
 
-            entity.Property(f => f.FeedUrl).IsRequired();
+            entity.Property(f => f.UserId)
+                .IsRequired();
 
-            entity.Property(f => f.FeedTitle).IsRequired();
+            entity.Property(f => f.FeedUrl)
+                .IsRequired();
 
-            entity.Property(f => f.BlogUrl).IsRequired();
+            entity.Property(f => f.FeedTitle)
+                .IsRequired();
 
-            entity.Property(f => f.LastChecked).IsRequired();
+            entity.Property(f => f.BlogUrl)
+                .IsRequired();
 
-            entity.HasIndex(f => new { f.UserId, f.FeedUrl }).IsUnique();
+            entity.Property(f => f.LastChecked)
+                .IsRequired();
+
+            entity.HasIndex(f => new { f.UserId, f.FeedUrl })
+                .IsUnique();
 
             entity.HasMany(f => f.Articles)
                   .WithOne(a => a.Feed)
@@ -46,18 +54,42 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(a => a.ArticleId);
 
-            entity.Property(a => a.ArticleUrl).IsRequired();
+            entity.Property(a => a.FeedId)
+                .IsRequired();
 
-            entity.Property(a => a.ArticleTitle).IsRequired();
+            entity.Property(a => a.ArticleUrl)
+                .IsRequired();
 
-            entity.Property(a => a.ArticleContent).IsRequired();
+            entity.Property(a => a.ArticleTitle)
+                .IsRequired();
 
-            entity.Property(a => a.ArticleDate).IsRequired();
+            entity.Property(a => a.ArticleContent)
+                .IsRequired();
 
-            entity.Property(a => a.IsUnread).IsRequired();
+            entity.Property(a => a.IsUnread)
+                .IsRequired();
 
-            entity.HasIndex(a => new { a.FeedId, a.ArticleUrl }).IsUnique();
+            entity.Property(a => a.ArticleDate)
+                .IsRequired();
+
+            entity.HasIndex(a => new { a.FeedId, a.ArticleUrl })
+                .IsUnique();
+
+            entity.HasOne(a => a.Feed)
+                .WithMany(f => f.Articles)
+                .HasForeignKey(a => a.FeedId);
         });
 
+        // FeedUpdate configuration
+        modelBuilder.Entity<FeedUpdate>(entity =>
+        {
+            entity.HasKey(f => f.FeedUpdateId);
+
+            entity.Property(f => f.UserId)
+                .IsRequired();
+
+            entity.Property(f => f.RequestedAt)
+                .IsRequired();
+        });
     }
 }

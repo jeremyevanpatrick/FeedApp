@@ -1,6 +1,7 @@
 ﻿using FeedApp3.Api.Controllers;
 using FeedApp3.Api.Exceptions;
 using FeedApp3.Api.Services.Application;
+using FeedApp3.Shared.Errors;
 using FeedApp3.Shared.Services.DTOs;
 using FeedApp3.Shared.Services.Requests;
 using FluentAssertions;
@@ -8,8 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Shared.Helpers;
-using System.Data.Common;
+using Shared.Services.Responses;
 using System.Security.Claims;
 
 namespace FeedApp3.Api.Tests.Controllers
@@ -116,8 +116,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
         }
 
         [Fact]
@@ -179,8 +179,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
         }
 
         [Fact]
@@ -245,8 +245,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
         }
 
         [Fact]
@@ -312,8 +312,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
         }
 
         [Fact]
@@ -379,8 +379,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
         }
 
         [Fact]
@@ -446,8 +446,8 @@ namespace FeedApp3.Api.Tests.Controllers
             result.Should().BeOfType<ObjectResult>()
                 .Which.StatusCode.Should().Be(400);
             result.Should().BeOfType<ObjectResult>()
-                .Which.Value.Should().BeOfType<ProblemDetails>()
-                .Which.Extensions["errorCode"].Should().Be(ResponseErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
+                .Which.Value.Should().BeOfType<ApiErrorResponse>()
+                .Which.ErrorCode.Should().Be(ApiErrorCodes.INVALID_REQUEST_PARAMETERS.ToString());
         }
 
         [Fact]

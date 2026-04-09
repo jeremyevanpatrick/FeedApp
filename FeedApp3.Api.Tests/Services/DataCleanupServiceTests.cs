@@ -46,7 +46,10 @@ namespace FeedApp3.Api.Tests.Services
         public async Task ExecuteAsync_WhenBothValid_CompletesSuccessfully()
         {
             // Arrange
-            var olderThanDays = 30;
+            var purgeSoftDeletedAfterDays = 30;
+            var purgeTokensAfterDays = 1;
+            var purgeInfoLogsAfterDays = 1;
+            var purgeErrorLogsAfterDays = 7;
             var testId1 = Guid.NewGuid();
             var testId2 = Guid.NewGuid();
             var softDeletedUsers = new List<ApplicationUser>
@@ -65,6 +68,12 @@ namespace FeedApp3.Api.Tests.Services
                 }
             };
 
+            var loggingRepoMock = new Mock<ILoggingRepository>();
+            loggingRepoMock.Setup(x => x.DeleteInfoLogsByDaysAsync(It.IsAny<int>()))
+                .Returns(Task.CompletedTask);
+            loggingRepoMock.Setup(x => x.DeleteErrorLogsByDaysAsync(It.IsAny<int>()))
+                .Returns(Task.CompletedTask);
+
             var authRepoMock = new Mock<IAuthRepository>();
             authRepoMock.Setup(x => x.DeleteRefreshTokensExpiredByDaysAsync(It.IsAny<int>()))
                 .Returns(Task.CompletedTask);
@@ -80,6 +89,8 @@ namespace FeedApp3.Api.Tests.Services
                 .ReturnsAsync(IdentityResult.Success);
 
             var mockScopeProvider = new Mock<IServiceProvider>();
+            mockScopeProvider.Setup(x => x.GetService(typeof(ILoggingRepository)))
+                .Returns(loggingRepoMock.Object);
             mockScopeProvider.Setup(x => x.GetService(typeof(IAuthRepository)))
                 .Returns(authRepoMock.Object);
             mockScopeProvider.Setup(x => x.GetService(typeof(IFeedRepository)))
@@ -92,7 +103,10 @@ namespace FeedApp3.Api.Tests.Services
             var dataCleanupSettings = Options.Create(new DataCleanupSettings
             {
                 ScheduledHour = DateTime.UtcNow.Hour,
-                OlderThanDays = olderThanDays
+                PurgeErrorLogsAfterDays = purgeErrorLogsAfterDays,
+                PurgeInfoLogsAfterDays = purgeInfoLogsAfterDays,
+                PurgeSoftDeletedAfterDays = purgeSoftDeletedAfterDays,
+                PurgeTokensAfterDays = purgeTokensAfterDays
             });
             
             var service = new DataCleanupService(mockScopeFactory, Mock.Of<ILogger<DataCleanupService>>(), dataCleanupSettings);
@@ -106,7 +120,7 @@ namespace FeedApp3.Api.Tests.Services
 
             // Assert
             authRepoMock.Verify(
-                x => x.DeleteRefreshTokensExpiredByDaysAsync(olderThanDays),
+                x => x.DeleteRefreshTokensExpiredByDaysAsync(purgeTokensAfterDays),
                 Times.Once);
 
             feedRepoMock.Verify(
@@ -115,12 +129,25 @@ namespace FeedApp3.Api.Tests.Services
             feedRepoMock.Verify(
                 x => x.DeleteUserFeedsAsync(testId2),
                 Times.Once);
+
+            loggingRepoMock.Verify(
+                x => x.DeleteInfoLogsByDaysAsync(purgeInfoLogsAfterDays),
+                Times.Once);
+            loggingRepoMock.Verify(
+                x => x.DeleteErrorLogsByDaysAsync(purgeErrorLogsAfterDays),
+                Times.Once);
         }
 
         [Fact]
         public async Task ExecuteAsync_WhenDatabaseIsUnreachable_DoesNothing()
         {
             // Arrange
+            var loggingRepoMock = new Mock<ILoggingRepository>();
+            loggingRepoMock.Setup(x => x.DeleteInfoLogsByDaysAsync(It.IsAny<int>()))
+                .ThrowsAsync(new Exception("test"));
+            loggingRepoMock.Setup(x => x.DeleteErrorLogsByDaysAsync(It.IsAny<int>()))
+                .ThrowsAsync(new Exception("test"));
+
             var authRepoMock = new Mock<IAuthRepository>();
             authRepoMock.Setup(x => x.DeleteRefreshTokensExpiredByDaysAsync(It.IsAny<int>()))
                 .ThrowsAsync(new Exception("test"));
@@ -128,6 +155,8 @@ namespace FeedApp3.Api.Tests.Services
                 .ThrowsAsync(new Exception("test"));
 
             var mockScopeProvider = new Mock<IServiceProvider>();
+            mockScopeProvider.Setup(x => x.GetService(typeof(ILoggingRepository)))
+                .Returns(loggingRepoMock.Object);
             mockScopeProvider.Setup(x => x.GetService(typeof(IAuthRepository)))
                 .Returns(authRepoMock.Object);
 
@@ -136,7 +165,10 @@ namespace FeedApp3.Api.Tests.Services
             var dataCleanupSettings = Options.Create(new DataCleanupSettings
             {
                 ScheduledHour = DateTime.UtcNow.Hour,
-                OlderThanDays = 30
+                PurgeSoftDeletedAfterDays = 30,
+                PurgeTokensAfterDays = 1,
+                PurgeInfoLogsAfterDays = 1,
+                PurgeErrorLogsAfterDays = 7
             });
 
             var mockLogger = new Mock<ILogger<DataCleanupService>>();

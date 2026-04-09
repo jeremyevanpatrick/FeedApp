@@ -1,9 +1,10 @@
-﻿using FeedApp3.Shared.Helpers;
+﻿using FeedApp3.Shared.Errors;
 using FeedApp3.Web.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Shared.Exceptions;
 using System.Net;
 
 namespace FeedApp3.Web.Services
@@ -41,8 +42,11 @@ namespace FeedApp3.Web.Services
                     //unexpected error
                     var controller = context.RouteData.Values["controller"]?.ToString() ?? "Unknown";
                     var action = context.RouteData.Values["action"]?.ToString() ?? "Unknown";
-                    _logger.LogErrorWithDictionary(WebErrorCodes.ControllerUnexpected, context.Exception, $"Unexpected error in {controller}/{action}");
-                    
+                    _logger.LogError(
+                        context.Exception,
+                        $"Unexpected error in {controller}/{action}" + ". ErrorCode: {ErrorCode}",
+                        ApiErrorCodes.INTERNAL_SERVER_ERROR);
+
                     context.Result = new JsonResult(new { detail = WebErrorMessages.UnknownError })
                     {
                         StatusCode = (int)HttpStatusCode.InternalServerError
@@ -75,7 +79,10 @@ namespace FeedApp3.Web.Services
                     //unexpected error
                     var controller = context.RouteData.Values["controller"]?.ToString() ?? "Unknown";
                     var action = context.RouteData.Values["action"]?.ToString() ?? "Unknown";
-                    _logger.LogErrorWithDictionary(WebErrorCodes.ControllerUnexpected, context.Exception, $"Unexpected error in {controller}/{action}");
+                    _logger.LogError(
+                        context.Exception,
+                        $"Unexpected error in {controller}/{action}" + ". ErrorCode: {ErrorCode}",
+                        ApiErrorCodes.INTERNAL_SERVER_ERROR);
 
                     context.ModelState.AddModelError(string.Empty, WebErrorMessages.UnknownError);
                     context.HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;

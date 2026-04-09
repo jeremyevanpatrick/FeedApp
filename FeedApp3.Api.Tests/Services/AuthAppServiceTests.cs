@@ -2,19 +2,16 @@
 using FeedApp3.Api.Exceptions;
 using FeedApp3.Api.Models;
 using FeedApp3.Api.Services.Application;
-using FeedApp3.Api.Services.External;
+using FeedApp3.Api.Services.Queues;
 using FeedApp3.Api.Settings;
-using FeedApp3.Shared.Services.DTOs;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Newtonsoft.Json.Linq;
 
 namespace FeedApp3.Api.Tests.Services
 {
@@ -71,16 +68,15 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var mockEmailSender = new Mock<IEmailSender>();
-            mockEmailSender.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
+            var mockEmailSender = new Mock<IEmailSenderQueue>();
+            mockEmailSender.Setup(x => x.Enqueue(It.IsAny<EmailDetails>()));
             
             var clientSettings = new ClientSettings
             {
                 Host = "testHost"
             };
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
@@ -99,7 +95,7 @@ namespace FeedApp3.Api.Tests.Services
             createdUser.Email.Should().Be(email);
             createdPassword.Should().Be(password);
             mockEmailSender.Verify(
-                s => s.SendEmailAsync(email, It.IsAny<string>(), It.IsAny<string>()),
+                s => s.Enqueue(It.IsAny<EmailDetails>()),
                 Times.Once);
         }
 
@@ -117,13 +113,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             var email = "testEmail";
             var password = "testPwd";
@@ -152,13 +148,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             var email = "testEmail";
             var password = "testPwd";
@@ -192,16 +188,15 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var mockEmailSender = new Mock<IEmailSender>();
-            mockEmailSender.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
+            var mockEmailSender = new Mock<IEmailSenderQueue>();
+            mockEmailSender.Setup(x => x.Enqueue(It.IsAny<EmailDetails>()));
 
             var clientSettings = new ClientSettings
             {
                 Host = "testHost"
             };
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
@@ -215,7 +210,7 @@ namespace FeedApp3.Api.Tests.Services
             // Assert
             await result.Should().NotThrowAsync<Exception>();
             mockEmailSender.Verify(
-                s => s.SendEmailAsync(email, It.IsAny<string>(), It.IsAny<string>()),
+                s => s.Enqueue(It.IsAny<EmailDetails>()),
                 Times.Once);
         }
 
@@ -226,13 +221,13 @@ namespace FeedApp3.Api.Tests.Services
             var mockUserManager = CreateUserManager();
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             var email = "";
 
@@ -255,13 +250,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             var email = "testEmail";
 
@@ -284,13 +279,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             var email = "testEmail";
 
@@ -318,13 +313,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ConfirmEmailAsync(userId, token);
@@ -349,13 +344,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>()); 
+                Mock.Of<IEmailSenderQueue>()); 
 
             // Act
             Func<Task> result = () => service.ConfirmEmailAsync(userId, token);
@@ -383,13 +378,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ConfirmEmailAsync(userId, token);
@@ -426,13 +421,13 @@ namespace FeedApp3.Api.Tests.Services
                 Key = "testKey_at_least_16_characters_long"
             });
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 mockRepo.Object,
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 jwtSettings,
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             var result = await service.LoginAsync(email, password);
@@ -440,6 +435,8 @@ namespace FeedApp3.Api.Tests.Services
             // Assert
             result.Should().NotBeNull();
             result.UserId.Should().Be(userId);
+            result.AccessToken.Should().NotBeNull();
+            result.RefreshToken.Should().NotBeNull();
         }
 
         [Fact]
@@ -455,13 +452,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.LoginAsync(email, password);
@@ -488,13 +485,13 @@ namespace FeedApp3.Api.Tests.Services
             mockSignInManager.Setup(m => m.CheckPasswordSignInAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>(), It.IsAny<bool>()))
                 .ReturnsAsync(SignInResult.LockedOut);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.LoginAsync(email, password);
@@ -519,13 +516,13 @@ namespace FeedApp3.Api.Tests.Services
             mockSignInManager.Setup(m => m.CheckPasswordSignInAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>(), It.IsAny<bool>()))
                 .ReturnsAsync(SignInResult.NotAllowed);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.LoginAsync(email, password);
@@ -550,16 +547,15 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var mockEmailSender = new Mock<IEmailSender>();
-            mockEmailSender.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
+            var mockEmailSender = new Mock<IEmailSenderQueue>();
+            mockEmailSender.Setup(x => x.Enqueue(It.IsAny<EmailDetails>()));
 
             var clientSettings = Options.Create(new ClientSettings
             {
                 Host = "testHost"
             });
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
@@ -573,7 +569,7 @@ namespace FeedApp3.Api.Tests.Services
             // Assert
             await result.Should().NotThrowAsync<Exception>();
             mockEmailSender.Verify(
-                s => s.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+                s => s.Enqueue(It.IsAny<EmailDetails>()),
                 Times.Once);
         }
 
@@ -591,13 +587,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ForgotPasswordAsync(email);
@@ -625,13 +621,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ResetPasswordAsync(email, token, password);
@@ -658,13 +654,13 @@ namespace FeedApp3.Api.Tests.Services
             
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ResetPasswordAsync(email, token, password);
@@ -693,13 +689,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ResetPasswordAsync(email, token, password);
@@ -724,13 +720,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ChangePasswordAsync(email, oldPassword, newPassword);
@@ -757,13 +753,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ChangePasswordAsync(email, oldPassword, newPassword);
@@ -792,13 +788,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ChangePasswordAsync(email, oldPassword, newPassword);
@@ -827,13 +823,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ChangePasswordAsync(email, oldPassword, newPassword);
@@ -862,16 +858,15 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var mockEmailSender = new Mock<IEmailSender>();
-            mockEmailSender.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
+            var mockEmailSender = new Mock<IEmailSenderQueue>();
+            mockEmailSender.Setup(x => x.Enqueue(It.IsAny<EmailDetails>()));
 
             var clientSettings = Options.Create(new ClientSettings
             {
                 Host = "testHost"
             });
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
@@ -885,7 +880,7 @@ namespace FeedApp3.Api.Tests.Services
             // Assert
             await result.Should().NotThrowAsync<Exception>();
             mockEmailSender.Verify(
-                s => s.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+                s => s.Enqueue(It.IsAny<EmailDetails>()),
                 Times.Once);
         }
 
@@ -903,13 +898,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ChangeEmailAsync(userId, email, password);
@@ -934,13 +929,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ChangeEmailAsync(userId, email, password);
@@ -967,13 +962,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ChangeEmailAsync(userId, email, password);
@@ -1003,13 +998,13 @@ namespace FeedApp3.Api.Tests.Services
                 Host = "testHost"
             });
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 clientSettings,
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ChangeEmailConfirmationAsync(userId, email, token);
@@ -1035,13 +1030,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ChangeEmailConfirmationAsync(userId, email, token);
@@ -1073,13 +1068,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.ChangeEmailConfirmationAsync(userId, email, token);
@@ -1099,9 +1094,19 @@ namespace FeedApp3.Api.Tests.Services
             var email = "testEmail";
             var refreshToken = "testKey_at_least_16_characters_long";
 
+            var newRefreshToken = new RefreshToken()
+            {
+                Id = 123,
+                UserId = Guid.NewGuid().ToString(),
+                TokenHash = "testHash",
+                IsRevoked = false,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            };
+
             var mockRepo = new Mock<IAuthRepository>();
             mockRepo.Setup(m => m.GetRefreshTokenAsync(It.IsAny<string>()))
-                .ReturnsAsync(new RefreshToken() { Id = 123, UserId = Guid.NewGuid().ToString(), TokenHash = "testHash", IsRevoked = false, ExpiresAt = DateTime.UtcNow.AddDays(7) });
+                .ReturnsAsync(newRefreshToken);
             mockRepo.Setup(m => m.AddRefreshTokenAsync(It.IsAny<RefreshToken>()))
                 .Returns(Task.CompletedTask);
             mockRepo.Setup(m => m.UpdateRefreshTokenAsync(It.IsAny<RefreshToken>()))
@@ -1123,19 +1128,20 @@ namespace FeedApp3.Api.Tests.Services
                 Key = "testKey_at_least_16_characters_long"
             });
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 mockRepo.Object,
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 jwtSettings,
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             var result = await service.RefreshTokenAsync(refreshToken);
 
             // Assert
             result.Should().NotBeNull();
+            result.AccessToken.Should().NotBeNull();
             result.RefreshToken.Should().NotBeNull();
         }
 
@@ -1148,13 +1154,13 @@ namespace FeedApp3.Api.Tests.Services
             var mockUserManager = CreateUserManager();
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.RefreshTokenAsync(refreshToken);
@@ -1177,6 +1183,7 @@ namespace FeedApp3.Api.Tests.Services
                     UserId = Guid.NewGuid().ToString(),
                     TokenHash = "testHash",
                     IsRevoked = false,
+                    CreatedAt = DateTime.UtcNow.AddDays(-10),
                     ExpiresAt = DateTime.UtcNow.AddDays(-1)
                 });
 
@@ -1184,13 +1191,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 mockRepo.Object,
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.RefreshTokenAsync(refreshToken);
@@ -1213,6 +1220,7 @@ namespace FeedApp3.Api.Tests.Services
                     UserId = Guid.NewGuid().ToString(),
                     TokenHash = "testHash",
                     IsRevoked = false,
+                    CreatedAt = DateTime.UtcNow,
                     ExpiresAt = DateTime.UtcNow.AddDays(1)
                 });
             RefreshToken? updatedToken = null;
@@ -1224,13 +1232,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 mockRepo.Object,
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.LogoutAsync(refreshToken);
@@ -1255,13 +1263,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 Mock.Of<IAuthRepository>(),
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.LogoutAsync(refreshToken);
@@ -1287,6 +1295,7 @@ namespace FeedApp3.Api.Tests.Services
                     UserId = Guid.NewGuid().ToString(),
                     TokenHash = "testHash",
                     IsRevoked = false,
+                    CreatedAt = DateTime.UtcNow.AddDays(-10),
                     ExpiresAt = DateTime.UtcNow.AddDays(-1)
                 });
             mockRepo.Setup(m => m.UpdateRefreshTokenAsync(It.IsAny<RefreshToken>()))
@@ -1296,13 +1305,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 mockRepo.Object,
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.LogoutAsync(refreshToken);
@@ -1332,6 +1341,7 @@ namespace FeedApp3.Api.Tests.Services
                         UserId = userId,
                         TokenHash = "testHashActive",
                         IsRevoked = false,
+                        CreatedAt = DateTime.UtcNow,
                         ExpiresAt = DateTime.UtcNow.AddDays(1)
                     },
                     new RefreshToken()
@@ -1340,6 +1350,7 @@ namespace FeedApp3.Api.Tests.Services
                         UserId = userId,
                         TokenHash = "testHashExpired",
                         IsRevoked = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-10),
                         ExpiresAt = DateTime.UtcNow.AddDays(-1)
                     }
                 });
@@ -1366,13 +1377,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 mockRepo.Object,
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.DeleteAccountAsync(userId, password);
@@ -1403,13 +1414,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 mockRepo.Object,
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.DeleteAccountAsync(userId, password);
@@ -1453,13 +1464,13 @@ namespace FeedApp3.Api.Tests.Services
 
             var mockSignInManager = CreateSignInManager(mockUserManager);
 
-            var service = new AuthAppService(
+            var service = new AuthAppService(Mock.Of<ILogger<AuthAppService>>(),
                 mockRepo.Object,
                 mockUserManager.Object,
                 mockSignInManager.Object,
                 Mock.Of<IOptions<ClientSettings>>(),
                 Mock.Of<IOptions<JwtSettings>>(),
-                Mock.Of<IEmailSender>());
+                Mock.Of<IEmailSenderQueue>());
 
             // Act
             Func<Task> result = () => service.DeleteAccountAsync(userId, password);

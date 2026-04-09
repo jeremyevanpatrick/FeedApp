@@ -4,6 +4,8 @@ using FeedApp3.Api.Models;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace FeedApp3.Api.Tests.Repositories
 {
@@ -69,7 +71,7 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var result = await repo.GetListByUserIdAsync(userId);
@@ -144,7 +146,7 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var result = await repo.GetByFeedIdAsync(userId, feedId);
@@ -206,7 +208,7 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var result = await repo.GetByArticleIdAsync(userId, articleId);
@@ -237,7 +239,7 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var result = await repo.IsDuplicateFeedUrlAsync(userId, feedUrl);
@@ -266,7 +268,7 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var result = await repo.IsDuplicateFeedUrlAsync(userId, feedUrl);
@@ -324,7 +326,7 @@ namespace FeedApp3.Api.Tests.Repositories
                 }
             };
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             await repo.CreateAsync(feed);
@@ -332,6 +334,7 @@ namespace FeedApp3.Api.Tests.Repositories
             // Assert
             var createdFeed = await db.Feeds
                 .Include(f => f.Articles)
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
             createdFeed.Should().NotBeNull();
             createdFeed!.FeedId.Should().Be(feedId);
@@ -362,10 +365,19 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var duplicateFeed = new Feed
+            {
+                FeedId = feedId,
+                UserId = userId,
+                FeedTitle = "Test 3",
+                FeedUrl = "https://example3.com/rss",
+                BlogUrl = "https://example3.com"
+            };
+
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
-            Func<Task> result = () => repo.CreateAsync(feed);
+            Func<Task> result = () => repo.CreateAsync(duplicateFeed);
 
             // Assert
             await result.Should().ThrowAsync<Exception>();
@@ -410,13 +422,16 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            db.Entry(feed).State = EntityState.Detached;
+
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var newLastChecked = DateTime.UtcNow;
 
             var feedToUpdate = await db.Feeds
                 .Include(f => f.Articles)
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             feedToUpdate!.LastChecked = newLastChecked;
@@ -434,6 +449,7 @@ namespace FeedApp3.Api.Tests.Repositories
             // Assert
             var updatedFeedResult = await db.Feeds
                 .Include(f => f.Articles)
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
             updatedFeedResult.Should().NotBeNull();
             updatedFeedResult!.FeedId.Should().Be(feedId);
@@ -449,7 +465,7 @@ namespace FeedApp3.Api.Tests.Repositories
         {
             // Arrange
             var db = CreateDb();
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var updatedFeed = new Feed
@@ -501,21 +517,26 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            db.Entry(feed).State = EntityState.Detached;
+
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var feedToDelete = await db.Feeds
                 .Include(f => f.Articles)
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             await repo.DeleteAsync(feedToDelete);
 
             // Assert
             var deletedFeedResult = await db.Feeds
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
             deletedFeedResult.Should().BeNull();
 
             var deletedArticleResult = await db.Articles
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
             deletedArticleResult.Should().BeNull();
 
@@ -526,7 +547,7 @@ namespace FeedApp3.Api.Tests.Repositories
         {
             // Arrange
             var db = CreateDb();
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var feedToDelete = new Feed
@@ -577,7 +598,7 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var articlesToCreate = new List<Article>
@@ -609,6 +630,7 @@ namespace FeedApp3.Api.Tests.Repositories
             // Assert
             var updatedFeed = await db.Feeds
                 .Include(f => f.Articles)
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
             updatedFeed!.Articles.Count.Should().Be(3);
 
@@ -648,7 +670,7 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var articlesToCreate = new List<Article>
@@ -693,10 +715,13 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            db.Entry(article).State = EntityState.Detached;
+
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var articleToUpdate = await db.Articles
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             articleToUpdate!.IsUnread = false;
@@ -705,6 +730,7 @@ namespace FeedApp3.Api.Tests.Repositories
 
             // Assert
             var updatedArticle = await db.Articles
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
             updatedArticle!.IsUnread.Should().Be(false);
 
@@ -715,7 +741,7 @@ namespace FeedApp3.Api.Tests.Repositories
         {
             // Arrange
             var db = CreateDb();
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var article = new Article
@@ -820,20 +846,23 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             await repo.DeleteUserFeedsAsync(userId);
 
             // Assert
             var feeds = await db.Feeds
+                .AsNoTracking()
                 .ToListAsync();
-            feeds.Count.Should().Be(1);
+            feeds.Should().HaveCount(1);
             feeds.Should().NotContain(f => f.UserId == userId);
 
             var articles = await db.Articles
+                .Include(a => a.Feed)
+                .AsNoTracking()
                 .ToListAsync();
-            articles.Count.Should().Be(1);
+            articles.Should().HaveCount(1);
             articles.Should().NotContain(a => a.Feed.UserId == userId);
 
         }
@@ -872,13 +901,14 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             Func<Task> result = () => repo.DeleteUserFeedsAsync(Guid.NewGuid());
 
             // Assert
             var feeds = await db.Feeds
+                .AsNoTracking()
                 .ToListAsync();
             feeds.Count.Should().Be(1);
 
@@ -898,13 +928,14 @@ namespace FeedApp3.Api.Tests.Repositories
                 RequestedAt = DateTime.UtcNow
             };
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             await repo.CreateFeedUpdateAsync(feedUpdate);
 
             // Assert
             var createdFeedUpdate = await db.FeedUpdates
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
             createdFeedUpdate.Should().NotBeNull();
             createdFeedUpdate.UserId.Should().Be(userId);
@@ -936,7 +967,7 @@ namespace FeedApp3.Api.Tests.Repositories
 
             await db.SaveChangesAsync();
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             var result = await repo.GetPendingFeedUpdatesAsync(2);
@@ -981,13 +1012,14 @@ namespace FeedApp3.Api.Tests.Repositories
 
             List<Guid> userIds = new List<Guid> { userId1, userId2 };
 
-            var repo = new FeedRepository(db);
+            var repo = new FeedRepository(Mock.Of<ILogger<FeedRepository>>(), db);
 
             // Act
             await repo.DeleteFeedUpdatesAsync(userIds);
 
             // Assert
             var feedUpdates = await db.FeedUpdates
+                .AsNoTracking()
                 .ToListAsync();
             feedUpdates.Count.Should().Be(1);
             feedUpdates.Should().NotContain(u => userIds.Contains(u.UserId));

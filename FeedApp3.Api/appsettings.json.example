@@ -10,12 +10,20 @@
   },
   "RemoteLogging": {
     "ApplicationName": "FeedApp3.Api",
-    "Endpoint": "http://localhost:5256/logs/logerror"
+    "Endpoint": "http://localhost:5256/logs/logbatch"
   },
   "Logging": {
     "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
+      "Default": "Error",
+      "Microsoft": "Error",
+      "System": "Error",
+      "FeedApp3": "Information"
+    },
+    "Console": {
+      "IncludeScopes": true
+    },
+    "Debug": {
+      "IncludeScopes": true
     }
   },
   "Client": {
@@ -37,7 +45,10 @@
     "FromName": "FeedApp3"
   },
   "DataCleanup": {
-    "OlderThanDays": 30,
+    "PurgeSoftDeletedAfterDays": 30,
+    "PurgeTokensAfterDays": 1,
+    "PurgeInfoLogsAfterDays": 1,
+    "PurgeErrorLogsAfterDays": 7,
     "ScheduledHour": 3
   },
   "AllowedHosts": "*"

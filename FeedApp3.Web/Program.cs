@@ -1,5 +1,5 @@
-using FeedApp3.Shared.Data;
 using FeedApp3.Shared.Services;
+using FeedApp3.Shared.Services.Queues;
 using FeedApp3.Shared.Settings;
 using FeedApp3.Web.Data;
 using FeedApp3.Web.Services;
@@ -16,11 +16,11 @@ builder.Services.AddControllersWithViews(options =>
 });
 
 builder.Logging.ClearProviders();
+builder.Services.AddSingleton<IExternalScopeProvider, LoggerExternalScopeProvider>();
 builder.Services.AddSingleton<ILoggerProvider, RemoteLoggerProvider>();
 
 builder.Services.Configure<ApplicationSettings>(builder.Configuration.GetSection("Application"));
 builder.Services.Configure<RemoteLoggingSettings>(builder.Configuration.GetSection("RemoteLogging"));
-
 
 builder.Services.AddHttpClient<PublicHttpClient>(
     (sp, client) =>
@@ -28,6 +28,9 @@ builder.Services.AddHttpClient<PublicHttpClient>(
         var settings = sp.GetRequiredService<IOptions<ApplicationSettings>>().Value;
         client.BaseAddress = new Uri(settings.ApiBaseUrl);
     });
+
+builder.Services.AddSingleton<ILogProcessorQueue, LogProcessorQueue>();
+builder.Services.AddSingleton<LogSenderService>();
 
 builder.Services.AddScoped<IFeedClient, FeedClient>();
 
@@ -51,6 +54,8 @@ builder.Services.AddHttpClient<AuthenticatedHttpClient>(
     .AddHttpMessageHandler<JwtAuthorizationMessageHandler>();
 
 builder.Services.AddScoped<IAuthClient, AuthClient>();
+
+builder.Services.AddHostedService<LogSenderService>();
 
 var app = builder.Build();
 

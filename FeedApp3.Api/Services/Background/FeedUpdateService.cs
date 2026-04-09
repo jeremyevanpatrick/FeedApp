@@ -1,10 +1,10 @@
 ﻿using FeedApp3.Api.Data.Repositories;
-using FeedApp3.Api.Errors;
 using FeedApp3.Api.Helpers;
 using FeedApp3.Api.Models;
 using FeedApp3.Api.Services.External;
 using FeedApp3.Api.Settings;
-using FeedApp3.Shared.Helpers;
+using FeedApp3.Shared.Errors;
+using FeedApp3.Shared.Extensions;
 using FeedApp3.Shared.Services.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -52,94 +52,113 @@ namespace FeedApp3.Api.Services.Background
                     return;
                 }
 
-                await Parallel.ForEachAsync(feedUpdates,
-                    new ParallelOptions
-                    {
-                        MaxDegreeOfParallelism = _applicationSettings.FeedUpdateMaxParallelism
-                    },
-                    async (feedUpdate, ct) =>
-                    {
-                        await ProcessSingleUserFeeds(feedUpdate);
-                    });
+                using (_logger.BeginLoggingScope(nameof(FeedUpdateService), nameof(ProcessFeedUpdates), Guid.NewGuid().ToString()))
+                {
+                    await Parallel.ForEachAsync(feedUpdates,
+                        new ParallelOptions
+                        {
+                            MaxDegreeOfParallelism = _applicationSettings.FeedUpdateMaxParallelism
+                        },
+                        async (feedUpdate, ct) =>
+                        {
+                            await ProcessSingleUserFeeds(feedUpdate);
+                        });
 
-                await feedRepository.DeleteFeedUpdatesAsync(feedUpdates.Select(f => f.UserId).ToList());
-
+                    await feedRepository.DeleteFeedUpdatesAsync(feedUpdates.Select(f => f.UserId).ToList());
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogErrorWithDictionary(FeedUpdateErrorCodes.ProcessFeedUpdatesUnexpected, ex, "Unexpected error while processing feed updates");
+                _logger.LogError(
+                    ex,
+                    "Unexpected error while processing feed updates. ErrorCode: {ErrorCode}",
+                    ApiErrorCodes.INTERNAL_SERVER_ERROR);
             }
         }
 
         private async Task ProcessSingleUserFeeds(FeedUpdate feedUpdate)
         {
-            Guid userId = Guid.Empty;
-            try
+            using (_logger.BeginLoggingScope(nameof(FeedUpdateService), nameof(ProcessSingleUserFeeds)))
             {
-                using var scope = _scopeFactory.CreateScope();
+                Guid userId = Guid.Empty;
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
 
-                var feedRepository = scope.ServiceProvider.GetRequiredService<IFeedRepository>();
+                    var feedRepository = scope.ServiceProvider.GetRequiredService<IFeedRepository>();
 
-                userId = feedUpdate.UserId;
+                    userId = feedUpdate.UserId;
 
-                var feedList = await feedRepository.GetListByUserIdAsync(userId);
+                    var feedList = await feedRepository.GetListByUserIdAsync(userId);
 
-                await UpdateFeedList(scope, feedList);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogErrorWithDictionary(FeedUpdateErrorCodes.ProcessSingleUserFeedsUnexpected, ex, "Unexpected error while processing feed updates", new Dictionary<string, string> {
-                    { "UserId", userId.ToString() }
-                });
+                    await UpdateFeedList(scope, feedList);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Unexpected error while processing feed updates. ErrorCode: {ErrorCode}, UserId: {UserId}",
+                        ApiErrorCodes.INTERNAL_SERVER_ERROR,
+                        userId.ToString());
+                }
             }
         }
 
         private async Task UpdateFeedList(IServiceScope scope, List<Feed> feedSummaryList)
         {
-            var feedRepository = scope.ServiceProvider.GetRequiredService<IFeedRepository>();
-
-            var rssClient = scope.ServiceProvider.GetRequiredService<IRssClient>();
-
-            foreach (Feed feedSummary in feedSummaryList)
+            using (_logger.BeginLoggingScope(nameof(FeedUpdateService), nameof(UpdateFeedList)))
             {
-                try
+                var feedRepository = scope.ServiceProvider.GetRequiredService<IFeedRepository>();
+
+                var rssClient = scope.ServiceProvider.GetRequiredService<IRssClient>();
+
+                foreach (Feed feedSummary in feedSummaryList)
                 {
-                    if (feedSummary.LastChecked < DateTime.UtcNow.AddMinutes(-_applicationSettings.MinimumActiveUserRefreshIntervalInMinutes))
+                    try
                     {
-                        Feed? existingFeed = await feedRepository.GetByFeedIdAsync(feedSummary.UserId, feedSummary.FeedId);
-                        if (existingFeed == null)
+                        if (feedSummary.LastChecked < DateTime.UtcNow.AddMinutes(-_applicationSettings.MinimumActiveUserRefreshIntervalInMinutes))
                         {
-                            _logger.LogErrorWithDictionary(FeedUpdateErrorCodes.UpdateFeedNotFound, null, "Existing feed not found during update", new Dictionary<string, string> {
-                                { "UserId", feedSummary.UserId.ToString() },
-                                { "FeedId", feedSummary.FeedId.ToString() }
-                            });
-                        }
-                        else
-                        {
-                            //Get latest feed from URL
-                            FeedDto latestFeedDto = await rssClient.ImportFeedFromUrl(existingFeed.FeedUrl, existingFeed.LastModified);
-                            Feed latestFeed = FeedMapper.ToEntity(latestFeedDto);
-
-                            if (latestFeed.Articles.Any())
+                            Feed? existingFeed = await feedRepository.GetByFeedIdAsync(feedSummary.UserId, feedSummary.FeedId);
+                            if (existingFeed == null)
                             {
-                                List<Article> articlesToAdd = latestFeed.Articles.Where(l => !existingFeed.Articles.Any(e => e.ArticleUrl == l.ArticleUrl)).ToList();
-                                //TODO: verify this still works
-                                await feedRepository.CreateArticlesAsync(articlesToAdd);
-
-                                existingFeed.LastModified = latestFeed.LastModified;
+                                _logger.LogError(
+                                    null,
+                                    "Existing feed not found during update. ErrorCode: {ErrorCode}, UserId: {UserId}, FeedId: {FeedId}",
+                                    ApiErrorCodes.INVALID_REQUEST_PARAMETERS,
+                                    feedSummary.UserId.ToString(),
+                                    feedSummary.FeedId.ToString());
                             }
-                            existingFeed.LastChecked = latestFeed.LastChecked;
+                            else
+                            {
+                                //Get latest feed from URL
+                                FeedDto latestFeedDto = await rssClient.ImportFeedFromUrl(existingFeed.FeedUrl, existingFeed.LastModified);
+                                Feed latestFeed = FeedMapper.ToEntity(latestFeedDto);
 
-                            await feedRepository.UpdateAsync(existingFeed);
+                                if (latestFeed.Articles.Any())
+                                {
+                                    List<Article> articlesToAdd = latestFeed.Articles.Where(l => !existingFeed.Articles.Any(e => e.ArticleUrl == l.ArticleUrl)).ToList();
+
+                                    articlesToAdd.ForEach(a => a.FeedId = feedSummary.FeedId);
+
+                                    await feedRepository.CreateArticlesAsync(articlesToAdd);
+
+                                    existingFeed.LastModified = latestFeed.LastModified;
+                                }
+                                existingFeed.LastChecked = latestFeed.LastChecked;
+
+                                await feedRepository.UpdateAsync(existingFeed);
+                            }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogErrorWithDictionary(FeedUpdateErrorCodes.UpdateFeedInBackgroundUnexpected, ex, "Unexpected error while updating feed", new Dictionary<string, string> {
-                        { "UserId", feedSummary.UserId.ToString() },
-                        { "FeedId", feedSummary.FeedId.ToString() }
-                    });
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(
+                            ex,
+                            "Unexpected error while updating feed. ErrorCode: {ErrorCode}, UserId: {UserId}, FeedId: {FeedId}",
+                            ApiErrorCodes.INTERNAL_SERVER_ERROR,
+                            feedSummary.UserId.ToString(),
+                            feedSummary.FeedId.ToString());
+                    }
                 }
             }
         }
