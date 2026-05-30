@@ -5,7 +5,8 @@
   },
   "RemoteLogging": {
     "ApplicationName": "FeedApp3.Web",
-    "Endpoint": "http://localhost:5256/logs/logbatch"
+    "Endpoint": "http://localhost:5256/logs/logbatch",
+    "EnableRunningLogs": false
   },
   "Logging": {
     "LogLevel": {
