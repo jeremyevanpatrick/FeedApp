@@ -1,67 +1,67 @@
-# RSS Feed Reader Application
+# Feed App
 
-A full-stack RSS Feed Reader built with **ASP.NET Core MVC** and **Web API**.
-
----
-
-## 🚀 Features
-
-* 🔐 **Authentication & Authorization**
-
-  * JWT-based authentication
-  * Secure access token + refresh token workflow
-
-* 📰 **RSS Feed Management**
-
-  * Add, update, and delete feeds
-  * Retrieve feed lists and individual feeds
-  * Mark feeds and articles as read
-
-* ⚙️ **Background Processing**
-
-  * Asynchronous feed fetching and updates
-  * Scheduled maintenance tasks
+A full-stack RSS feed reader built with **ASP.NET Core**. Users can subscribe to RSS feeds, browse and read articles, and mark content as read. The application is structured as a decoupled Web API backend with MVC frontend, and background services that continuously poll and ingest feed content.
 
 ---
 
-## 🛠️ Tech Stack
+## Features
 
-* **Backend:** ASP.NET Core MVC & Web API
-* **Database:** SQL Server
-* **ORM:** Entity Framework Core
-* **Authentication:** JWT (JSON Web Tokens)
-* **Testing:** xUnit
-* **Logging:** Microsoft.Extensions.Logging
+**Feed Management**
+- Add, update, and delete RSS feed subscriptions
+- Retrieve feed lists and individual feeds
+- Browse articles from subscribed feeds
+- Mark feeds and individual articles as read
 
----
+**Authentication & Authorization**
+- JWT-based authentication with access and refresh token workflow
+- Dedicated auth database context keeping identity data separate from application data
 
-## 🔐 Authentication Flow
+**Background Processing**
+- Hosted background services periodically poll subscribed RSS feeds
+- Automatic article ingestion and deduplication
+- Scheduled cleanup and maintenance tasks
 
-1. User logs in and receives:
-
-   * Access Token (short-lived)
-   * Refresh Token (long-lived)
-
-2. Access token is used for API requests
-
-3. When expired:
-
-   * Refresh token is used to obtain a new access token
+**Observability**
+- Dedicated logging database context (`LoggingDbContext`) for structured log persistence
 
 ---
 
-## ⚙️ Background Services
+## Tech Stack
 
-Background workers handle:
-
-* Periodic RSS feed polling
-* Article ingestion and updates
-* Cleanup and maintenance tasks
-
-Implemented using hosted services for efficient async processing.
+| Technology | Purpose |
+|---|---|
+| ASP.NET Core Web API | Backend API |
+| ASP.NET Core MVC | Server-rendered web frontend |
+| Entity Framework Core | ORM and database migrations |
+| SQL Server | Primary data store |
+| JWT (JSON Web Tokens) | Authentication |
+| xUnit | Unit testing |
+| Microsoft.Extensions.Logging | Structured logging |
+| Azure Pipelines | CI/CD |
 
 ---
 
-## 📄 License
+## Database Contexts
+
+The API uses three separate EF Core DbContexts, each bundled as its own migration artifact in the CI pipeline:
+
+| Context | Purpose |
+|---|---|
+| `AppDbContext` | Core application data — feeds, articles, subscriptions |
+| `AuthDbContext` | Identity and authentication data — users, tokens |
+| `LoggingDbContext` | Persisted application logs |
+
+---
+
+## Authentication Flow
+
+1. User registers or logs in via the API
+2. A short-lived **access token** and long-lived **refresh token** are issued
+3. The access token is used to authenticate subsequent API requests
+4. When the access token expires, the refresh token is exchanged for a new one without requiring re-login
+
+---
+
+## License
 
 This project is licensed under the MIT License.
